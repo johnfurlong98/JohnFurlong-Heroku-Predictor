@@ -875,7 +875,7 @@ with tab5:
             # Display feature importances from the best-performing model
             if best_model_name in models:
                 # Assuming feature_importances.csv has 'Feature' and 'Importance' columns
-                feature_importances_filtered = feature_importances[feature_importances['Model'] != 'XGBoost']
+                feature_importances_filtered = feature_importances[feature_importances['Model'] != 'Random Forest']
                 feature_importances_best = feature_importances_filtered[feature_importances_filtered['Model'] == best_model_name]
 
                 if feature_importances_best.empty:
