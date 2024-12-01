@@ -1,5 +1,5 @@
-# app.py
 
+```python
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -924,6 +924,12 @@ with tab4:
     plt.tight_layout()
     st.pyplot(plt)
 
+    st.write("""
+    **Conclusion:**
+    
+    The boxplot illustrates a clear trend where houses with higher overall quality ratings command higher sale prices. This strong positive relationship validates our first hypothesis, emphasizing the significant impact of overall quality on property value.
+    """)
+
     # TotalSF vs SalePrice
     st.write("#### SalePrice vs TotalSF")
     plt.figure(figsize=(10, 6))
@@ -935,6 +941,12 @@ with tab4:
     plt.tight_layout()
     st.pyplot(plt)
 
+    st.write("""
+    **Conclusion:**
+    
+    The scatter plot reveals a positive correlation between total square footage and sale price. Larger homes with more square footage tend to have higher sale prices, supporting our second hypothesis that size is a key determinant of property value.
+    """)
+
     # YearRemodAdd vs SalePrice
     st.write("#### SalePrice vs YearRemodAdd")
     plt.figure(figsize=(10, 6))
@@ -944,6 +956,12 @@ with tab4:
     plt.ylabel('Average Sale Price', fontsize=12)
     plt.tight_layout()
     st.pyplot(plt)
+
+    st.write("""
+    **Conclusion:**
+    
+    The line plot shows an upward trend in sale prices with more recent remodeling years. This indicates that recent renovations and updates contribute positively to the property's market value, thereby validating our third hypothesis.
+    """)
 
     # GarageArea vs SalePrice
     st.write("#### SalePrice vs GarageArea")
@@ -956,6 +974,12 @@ with tab4:
     plt.tight_layout()
     st.pyplot(plt)
 
+    st.write("""
+    **Conclusion:**
+    
+    The scatter plot indicates that larger garage areas are associated with higher sale prices. Additionally, the quality of the garage finish further enhances the property's value. These observations confirm our fourth hypothesis, highlighting the significant role of garage features in determining house prices.
+    """)
+
     # LotArea vs SalePrice
     st.write("#### SalePrice vs LotArea")
     plt.figure(figsize=(10, 6))
@@ -967,6 +991,12 @@ with tab4:
     plt.tight_layout()
     st.pyplot(plt)
 
+    st.write("""
+    **Conclusion:**
+    
+    The positive relationship between lot area and sale price is evident from the scatter plot. Larger lots provide more outdoor space and potential for future expansions, thereby increasing the property's appeal and market value. This supports our fifth hypothesis regarding the importance of lot size and frontage in determining house prices.
+    """)
+
     # KitchenQual vs SalePrice
     st.write("#### SalePrice vs KitchenQual")
     plt.figure(figsize=(10, 6))
@@ -977,6 +1007,12 @@ with tab4:
     plt.tight_layout()
     st.pyplot(plt)
 
+    st.write("""
+    **Conclusion:**
+    
+    The boxplot clearly shows that houses with higher kitchen quality ratings have significantly higher sale prices. This strong positive association validates our sixth hypothesis, emphasizing the critical role of kitchen quality in enhancing property value.
+    """)
+
     # BedroomAbvGr vs SalePrice
     st.write("#### SalePrice vs BedroomAbvGr")
     plt.figure(figsize=(10, 6))
@@ -986,6 +1022,12 @@ with tab4:
     plt.ylabel('Sale Price', fontsize=12)
     plt.tight_layout()
     st.pyplot(plt)
+
+    st.write("""
+    **Conclusion:**
+    
+    The boxplot indicates a positive trend where an increasing number of bedrooms above grade correlates with higher sale prices. This finding supports our seventh hypothesis, demonstrating that more bedrooms enhance the property's appeal and market value.
+    """)
 
     st.write("""
     ### Summary of Hypothesis Validations
