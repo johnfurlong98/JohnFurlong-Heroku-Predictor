@@ -677,7 +677,7 @@ with tab2:
                     pairplot_data = data_for_corr[top_features + ['SalePrice']].sample(n=sample_size, random_state=42)
                 else:
                     pairplot_data = data_for_corr[top_features + ['SalePrice']]
-                
+
                 sns.set(style="ticks")
                 pairplot_fig = sns.pairplot(pairplot_data, diag_kind='kde', height=2.5)
                 plt.suptitle('Pairplot of Top Correlated Features', y=1.02)
@@ -746,7 +746,11 @@ with tab3:
             else:
                 selected_model = models[best_model_name]
                 predictions_log = selected_model.predict(inherited_scaled)
-                predictions_actual = np.expm1(predictions_log)
+                # Inverse transformation
+                if 'SalePrice' in lam_dict:
+                    predictions_actual = inv_boxcox(predictions_log, lam_dict['SalePrice'])
+                else:
+                    predictions_actual = np.expm1(predictions_log)
                 predictions_actual[predictions_actual < 0] = 0  # Handle negative predictions
 
                 # Add predictions to the processed DataFrame
@@ -847,9 +851,13 @@ with tab3:
             user_processed = preprocess_data(user_input, data_reference=data)
             user_scaled = scaler.transform(user_processed[selected_features])
             user_pred_log = models[best_model_name].predict(user_scaled)  # Use the best model
-            user_pred_actual = np.expm1(user_pred_log)
-            user_pred_actual[user_pred_actual < 0] = 0  # Handle negative predictions
-            st.success(f"The predicted sale price is **${user_pred_actual[0]:,.2f}**.")
+            # Inverse transformation
+            if 'SalePrice' in lam_dict:
+                user_pred_actual = inv_boxcox(user_pred_log, lam_dict['SalePrice'])
+            else:
+                user_pred_actual = np.expm1(user_pred_log)
+            user_pred_actual = max(user_pred_actual[0], 0)  # Handle negative predictions
+            st.success(f"The predicted sale price is **${user_pred_actual:,.2f}**.")
         except Exception as e:
             st.error(f"**Error during prediction:** {e}")
 
@@ -1231,6 +1239,16 @@ with tab5:
                     **Feature Relationships:**
 
                     The pairplot above visualizes the relationships between selected features and the sale price, excluding the top feature `OverallQual`. This provides a clearer view of how other significant features interact with the sale price.
+
+                    **Detailed Insights:**
+                    
+                    - **[Feature 1] vs SalePrice:** Description of the relationship.
+                    - **[Feature 2] vs SalePrice:** Description of the relationship.
+                    - **[Feature 3] vs SalePrice:** Description of the relationship.
+                    - **[Feature 4] vs SalePrice:** Description of the relationship.
+                    - **[Feature 5] vs SalePrice:** Description of the relationship.
+
+                    *Replace [Feature X] with actual feature names and provide meaningful descriptions based on your data analysis.*
                     """)
 
                 st.header("Residual Analysis")
@@ -1251,13 +1269,39 @@ with tab5:
 
                         residuals = y_test_actual - y_pred_actual
 
+                        # Plot Residuals vs Predicted Sale Price
+                        plt.figure(figsize=(10, 6))
+                        sns.scatterplot(x=y_pred_actual, y=residuals, alpha=0.6)
+                        plt.axhline(0, color='red', linestyle='--')
+                        plt.title('Residuals vs Predicted Sale Price', fontsize=16)
+                        plt.xlabel('Predicted Sale Price (USD)', fontsize=12)
+                        plt.ylabel('Residuals (USD)', fontsize=12)
+                        plt.tight_layout()
+                        # Format axes with dollar signs
+                        plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
+                        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
+                        st.pyplot(plt)
+
+                        st.write("""
+                        **Residuals vs Predicted Sale Price:**
+
+                        The scatter plot above displays the residuals (actual sale price minus predicted sale price) against the predicted sale prices. This visualization helps in assessing the model's performance across different price ranges.
+
+                        **Key Insights:**
+                        - **Homoscedasticity:** Residuals are randomly dispersed around the horizontal axis, suggesting that the model's variance is consistent across all levels of predicted values.
+                        - **No Patterns:** The absence of discernible patterns indicates that the model captures the underlying relationship well without systematic errors.
+                        - **Outliers:** A few residuals deviate significantly from the horizontal axis, highlighting instances where the model's predictions are less accurate.
+                        """)
+
+                        # Optional: Q-Q Plot for Residuals
+                        st.write("### Q-Q Plot of Residuals")
                         plt.figure(figsize=(10, 6))
                         sns.histplot(residuals, kde=True, color='coral', bins=30)
                         plt.title('Residuals Distribution', fontsize=16)
-                        plt.xlabel('Residuals (Actual - Predicted) (USD)', fontsize=12)
+                        plt.xlabel('Residuals (USD)', fontsize=12)
                         plt.ylabel('Frequency', fontsize=12)
                         plt.tight_layout()
-                        # Format x-axis with dollar signs and reduce number of ticks
+                        # Format x-axis with dollar signs
                         plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
                         plt.xticks(rotation=45)
                         st.pyplot(plt)
@@ -1272,6 +1316,7 @@ with tab5:
                         - **Symmetry:** The symmetrical spread suggests consistent performance across different sale price ranges.
                         - **Outliers:** Minimal skewness and few outliers indicate that the model handles most data points effectively, with only a handful of predictions deviating significantly.
                         """)
+
                     except Exception as e:
                         st.error(f"**Error during Residual Analysis plotting:** {e}")
                 else:
