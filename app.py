@@ -1,3 +1,4 @@
+# app.py
 
 import streamlit as st
 import pandas as pd
@@ -36,7 +37,7 @@ def check_file_exists(file_path, description):
         st.error(f"**Error:** The {description} file was not found at `{file_path}`.")
         st.stop()
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def load_data():
     """
     Loads the main dataset and the inherited houses dataset.
@@ -62,7 +63,7 @@ def load_data():
     
     return data, inherited_houses
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def load_models():
     """
     Loads all necessary models and related objects.
@@ -92,7 +93,7 @@ def load_models():
         except Exception as e:
             st.error(f"**Error loading {filename}:** {e}")
             st.stop()
-
+    
     # Load scaler and other related objects
     scaler_path = models_dir / 'scaler.joblib'
     selected_features_path = models_dir / 'selected_features.pkl'
@@ -160,6 +161,7 @@ def load_models():
     
     return models, scaler, selected_features, skewed_features, lam_dict, feature_importances, model_evaluation, train_test_data
 
+@st.cache_data(show_spinner=False)
 def feature_engineering(df):
     """
     Performs feature engineering by creating new features.
@@ -169,7 +171,8 @@ def feature_engineering(df):
     df['Qual_TotalSF'] = df.get('OverallQual', 0) * df.get('TotalSF', 0)
     return df
 
-def preprocess_data(df):
+@st.cache_data(show_spinner=False)
+def preprocess_data(df, data_reference=None):
     """
     Preprocesses the input data by handling missing values, encoding categorical variables,
     and transforming skewed features.
@@ -235,7 +238,11 @@ def preprocess_data(df):
                              'OverallQual', 'OverallCond', 'YearBuilt', 'YearRemodAdd']
     for feature in numerical_median_fill:
         if feature in df_processed.columns:
-            df_processed[feature] = df_processed[feature].fillna(data[feature].median())
+            if data_reference is not None and feature in data_reference.columns:
+                median_value = data_reference[feature].median()
+            else:
+                median_value = df_processed[feature].median()
+            df_processed[feature] = df_processed[feature].fillna(median_value)
     
     # Encode categorical features
     ordinal_mappings = {
@@ -280,7 +287,7 @@ data, inherited_houses = load_data()
  feature_importances, model_evaluation, train_test_data) = load_models()
 
 # Preprocess the main data
-data = preprocess_data(data)
+data = preprocess_data(data, data_reference=data)
 
 # --------------------------- #
 #       Feature Metadata       #
@@ -619,7 +626,7 @@ with tab2:
         st.error("**Error:** 'SalePrice' column not found in the dataset.")
     else:
         # Select features with high correlation (absolute value > 0.5)
-        top_corr_features = corr_matrix.index[abs(corr_matrix['SalePrice']) > 0.5]
+        top_corr_features = corr_matrix.index[abs(corr_matrix['SalePrice']) > 0.5].tolist()
 
         if len(top_corr_features) == 0:
             st.warning("**Warning:** No features found with a correlation greater than 0.5 with 'SalePrice'.")
@@ -649,17 +656,24 @@ with tab2:
             # Additional visualization: Pairplot with top features
             st.write("### Pairplot of Top Correlated Features")
             # Select top 5 features excluding 'SalePrice'
-            top_features = top_corr_features.drop('SalePrice').tolist()[:5]
+            top_features = [feat for feat in top_corr_features if feat != 'SalePrice'][:5]
             if len(top_features) == 0:
                 st.warning("**Warning:** Not enough features to create a pairplot.")
             else:
+                # To optimize performance, sample the data if it's too large
+                sample_size = 500  # Adjust based on performance
+                if data.shape[0] > sample_size:
+                    pairplot_data = data[top_features + ['SalePrice']].sample(n=sample_size, random_state=42)
+                else:
+                    pairplot_data = data[top_features + ['SalePrice']]
+                
                 sns.set(style="ticks")
-                pairplot_fig = sns.pairplot(data[top_features + ['SalePrice']], diag_kind='kde', height=2.5)
+                pairplot_fig = sns.pairplot(pairplot_data, diag_kind='kde', height=2.5)
                 plt.suptitle('Pairplot of Top Correlated Features', y=1.02)
                 st.pyplot(pairplot_fig)
 
                 st.write("""
-                The pairplot above visualizes pairwise relationships between the top correlated features and the sale price. This helps in identifying potential linear relationships and understanding the distribution of data points.
+                The pairplot above visualizes pairwise relationships between the top correlated features and the sale price. Sampling the data ensures quicker rendering while maintaining the overall trend insights.
                 """)
 
     st.write("""
@@ -688,13 +702,13 @@ with tab3:
     """)
 
     # Preprocess and predict for inherited houses
-    inherited_processed = preprocess_data(inherited_houses)
+    inherited_processed = preprocess_data(inherited_houses, data_reference=data)
     if selected_features is None or len(selected_features) == 0:
         st.error("**Error:** No selected features found for prediction.")
     else:
         try:
             inherited_scaled = scaler.transform(inherited_processed[selected_features])
-            # Determine best model based on evaluation, excluding 'XGBoost'
+            # Determine best model based on evaluation, excluding 'XGBoost' if present
             if model_evaluation.empty:
                 st.error("**Error:** Model evaluation results are empty.")
                 st.stop()
@@ -702,27 +716,19 @@ with tab3:
                 # Exclude 'XGBoost' if it's still present
                 if 'Model' in model_evaluation.columns:
                     available_evaluations = model_evaluation[model_evaluation['Model'] != 'XGBoost']
-                    if available_evaluations.empty:
-                        st.error("**Error:** No models available after excluding 'XGBoost'.")
-                        st.stop()
-                    if 'RMSE' not in available_evaluations.columns or 'Model' not in available_evaluations.columns:
-                        st.error("**Error:** 'RMSE' or 'Model' columns not found in the evaluation results.")
-                        st.stop()
-
-                    best_model_row = available_evaluations.loc[available_evaluations['RMSE'].idxmin()]
-                    best_model_name = best_model_row['Model']
                 else:
-                    # If 'Model' column does not exist, assume a single model is present
                     available_evaluations = model_evaluation
-                    if 'RMSE' not in available_evaluations.columns:
-                        st.error("**Error:** 'RMSE' column not found in the evaluation results.")
-                        st.stop()
-                    best_model_row = available_evaluations.loc[available_evaluations['RMSE'].idxmin()]
-                    # Assume there's only one model
-                    if 'Model' in available_evaluations.columns:
-                        best_model_name = best_model_row['Model']
-                    else:
-                        best_model_name = list(models.keys())[0]
+
+                if available_evaluations.empty:
+                    st.error("**Error:** No models available after excluding 'XGBoost'.")
+                    st.stop()
+
+                if 'RMSE' not in available_evaluations.columns or 'Model' not in available_evaluations.columns:
+                    st.error("**Error:** 'RMSE' or 'Model' columns not found in the evaluation results.")
+                    st.stop()
+
+                best_model_row = available_evaluations.loc[available_evaluations['RMSE'].idxmin()]
+                best_model_name = best_model_row['Model']
 
             if best_model_name not in models:
                 st.error(f"**Error:** Best model '{best_model_name}' not found among loaded models.")
@@ -827,7 +833,7 @@ with tab3:
     user_input = user_input_features()
     if user_input is not None:
         try:
-            user_processed = preprocess_data(user_input)
+            user_processed = preprocess_data(user_input, data_reference=data)
             user_scaled = scaler.transform(user_processed[selected_features])
             user_pred_log = models[best_model_name].predict(user_scaled)  # Use the best model
             user_pred_actual = np.expm1(user_pred_log)
@@ -922,7 +928,6 @@ with tab4:
     plt.ylabel('Sale Price', fontsize=12)
     plt.tight_layout()
     st.pyplot(plt)
-
     st.write("""
     **Conclusion:**
     
@@ -939,7 +944,6 @@ with tab4:
     plt.legend(title='Overall Quality', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     st.pyplot(plt)
-
     st.write("""
     **Conclusion:**
     
@@ -955,7 +959,6 @@ with tab4:
     plt.ylabel('Average Sale Price', fontsize=12)
     plt.tight_layout()
     st.pyplot(plt)
-
     st.write("""
     **Conclusion:**
     
@@ -972,7 +975,6 @@ with tab4:
     plt.legend(title='Garage Finish', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     st.pyplot(plt)
-
     st.write("""
     **Conclusion:**
     
@@ -989,7 +991,6 @@ with tab4:
     plt.legend(title='Bedrooms Above Grade', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     st.pyplot(plt)
-
     st.write("""
     **Conclusion:**
     
@@ -1005,7 +1006,6 @@ with tab4:
     plt.ylabel('Sale Price', fontsize=12)
     plt.tight_layout()
     st.pyplot(plt)
-
     st.write("""
     **Conclusion:**
     
@@ -1021,7 +1021,6 @@ with tab4:
     plt.ylabel('Sale Price', fontsize=12)
     plt.tight_layout()
     st.pyplot(plt)
-
     st.write("""
     **Conclusion:**
     
@@ -1061,6 +1060,7 @@ with tab5:
                 The table below presents the performance metrics of various regression models. These metrics help in assessing the accuracy and reliability of each model.
                 """)
 
+                # Display the evaluation table with formatted columns
                 st.dataframe(results_df_filtered.style.format({'MAE': '${:,.2f}', 'RMSE': '${:,.2f}', 'R² Score': '{:.4f}'}))
 
                 # Determine best model based on RMSE
@@ -1162,7 +1162,7 @@ with tab5:
                 # Display feature importances from the best-performing model
                 if best_model_name in models:
                     # Assuming feature_importances.csv has 'Feature' and 'Importance' columns
-                    feature_importances_best = feature_importances
+                    feature_importances_best = feature_importances.copy()
 
                     if feature_importances_best.empty:
                         st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
