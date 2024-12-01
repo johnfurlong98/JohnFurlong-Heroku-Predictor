@@ -1206,47 +1206,37 @@ with tab5:
                 else:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
 
-                st.header("Actual vs Predicted Prices")
-                selected_model = models.get(best_model_name)
-                if selected_model and train_test_data:
-                    X_train, X_test, y_train, y_test = train_test_data
-                    try:
-                        y_pred_log = selected_model.predict(X_test)
-                        # Inverse transformation of predictions
-                        if 'SalePrice' in lam_dict:
-                            y_pred_actual = inv_boxcox(y_pred_log, lam_dict['SalePrice'])
-                            y_test_actual = inv_boxcox(y_test, lam_dict['SalePrice'])
-                        else:
-                            y_pred_actual = np.expm1(y_pred_log)
-                            y_test_actual = np.expm1(y_test)
-                        y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
-
-                        plt.figure(figsize=(10, 6))
-                        sns.scatterplot(x=y_test_actual, y=y_pred_actual, color='purple', alpha=0.6)
-                        plt.xlabel('Actual Sale Price (USD)', fontsize=12)
-                        plt.ylabel('Predicted Sale Price (USD)', fontsize=12)
-                        plt.title('Actual vs Predicted Sale Prices', fontsize=16)
-                        plt.plot([y_test_actual.min(), y_test_actual.max()], [y_test_actual.min(), y_test_actual.max()], 'r--', label='Perfect Prediction')
-                        plt.legend()
-                        plt.tight_layout()
-                        st.pyplot(plt)
-
-                        st.write("""
-                        **Analysis:**
-                        
-                        The scatter plot compares the actual sale prices with the predicted sale prices. The red dashed line represents perfect predictions, where predicted values exactly match the actual values. The proximity of the data points to this line indicates the model's accuracy. Closer alignment signifies higher prediction precision.
-                        
-                        **Observations:**
-                        - Most predictions cluster around the perfect prediction line, demonstrating the model's reliability.
-                        - A few outliers exist, which could be due to unique property features or data anomalies.
-                        """)
-                    except Exception as e:
-                        st.error(f"**Error during Actual vs Predicted Prices plotting:** {e}")
+                st.header("Feature Relationships (Excluding OverallQual)")
+                # Select features excluding 'OverallQual'
+                feature_relations = [feat for feat in selected_features if feat != 'OverallQual']
+                if len(feature_relations) < 2:
+                    st.warning("**Warning:** Not enough features to create a feature relationships plot excluding 'OverallQual'.")
                 else:
-                    st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
+                    # Select top 5 features excluding 'OverallQual' for clarity
+                    top_features_rel = feature_relations[:5]
+                    # Prepare data for pairplot
+                    pairplot_data = data_for_corr[top_features_rel + ['SalePrice']]
+
+                    # To optimize performance, sample the data if it's too large
+                    sample_size = 500  # Adjust based on performance
+                    if pairplot_data.shape[0] > sample_size:
+                        pairplot_data = pairplot_data.sample(n=sample_size, random_state=42)
+
+                    sns.set(style="ticks")
+                    pairplot_fig = sns.pairplot(pairplot_data, diag_kind='kde', height=2.5)
+                    plt.suptitle('Feature Relationships Excluding OverallQual', y=1.02)
+                    st.pyplot(pairplot_fig)
+
+                    st.write("""
+                    **Feature Relationships:**
+
+                    The pairplot above visualizes the relationships between selected features and the sale price, excluding the top feature `OverallQual`. This provides a clearer view of how other significant features interact with the sale price.
+                    """)
 
                 st.header("Residual Analysis")
-                if selected_model and train_test_data:
+                if best_model_name in models and train_test_data:
+                    selected_model = models[best_model_name]
+                    X_train, X_test, y_train, y_test = train_test_data
                     try:
                         y_pred_log = selected_model.predict(X_test)
                         # Inverse transformation of predictions
@@ -1267,15 +1257,16 @@ with tab5:
                         plt.xlabel('Residuals (Actual - Predicted) (USD)', fontsize=12)
                         plt.ylabel('Frequency', fontsize=12)
                         plt.tight_layout()
-                        # Format x-axis with dollar signs
+                        # Format x-axis with dollar signs and reduce number of ticks
                         plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
+                        plt.xticks(rotation=45)
                         st.pyplot(plt)
 
                         st.write("""
                         **Understanding Residuals:**
-                        
+
                         Residuals represent the differences between actual and predicted sale prices. Analyzing their distribution helps in assessing the model's performance and identifying any underlying patterns or biases.
-                        
+
                         **Key Insights:**
                         - **Normal Distribution:** Residuals are approximately normally distributed around zero, indicating that the model's errors are random and unbiased.
                         - **Symmetry:** The symmetrical spread suggests consistent performance across different sale price ranges.
@@ -1284,7 +1275,7 @@ with tab5:
                     except Exception as e:
                         st.error(f"**Error during Residual Analysis plotting:** {e}")
                 else:
-                    st.warning("**Warning:** Cannot perform residual analysis without the selected model and necessary data.")
+                    st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
 
     st.write("""
     ### Conclusion
