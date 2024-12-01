@@ -1,0 +1,29 @@
+# Exclude virtual environment
+.venv/
+
+# Exclude Git metadata
+.git/
+
+# Exclude unnecessary build directories and files
+dist/
+build/
+*.egg-info/
+
+# Exclude large data files if any (adjust as needed)
+*.csv
+*.pkl
+*.joblib
+*.h5
+*.db
+*.sqlite3
+
+# Exclude logs
+*.log
+
+# Exclude OS-specific files
+.DS_Store
+Thumbs.db
+
+# Exclude editor-specific files
+.vscode/
+.idea/

@@ -1,0 +1,69 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment directory
+.venv/
+env/
+ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python specific cache and builds
+*.egg
+*.egg-info/
+dist/
+build/
+*.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Coverage and testing
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.tox/
+.nox/
+*.test_cache/
+
+# Distribution / Package files
+.Python
+*.env
+
+# Pyenv
+.python-version
+
+# Temporary files
+*.tmp
+*.bak
+*.old
+*.orig
+*.rej
+*.gz
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# Streamlit-specific
+.streamlit/
+
+# Gitignore
+.git/
