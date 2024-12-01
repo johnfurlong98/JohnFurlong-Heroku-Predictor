@@ -1,4 +1,3 @@
-
 # app.py
 
 import streamlit as st
@@ -68,8 +67,7 @@ def load_models():
         'ElasticNet': 'elasticnet_model.joblib',
         'Lasso Regression': 'lasso_regression_model.joblib',
         'Gradient Boosting': 'gradient_boosting_model.joblib',
-        'Random Forest': 'random_forest_model.joblib',
-        'XGBoost': 'xgboost_model.joblib'
+        'Random Forest': 'random_forest_model.joblib'
     }
     
     for name, filename in model_files.items():
@@ -843,7 +841,7 @@ with tab5:
 
         ### 7. Model Training
         - **Algorithms Used:**
-          - Linear Regression, Ridge Regression, Lasso Regression, ElasticNet, Random Forest, Gradient Boosting, XGBoost.
+          - Linear Regression, Ridge Regression, Lasso Regression, ElasticNet, Random Forest, Gradient Boosting.
         - **Hyperparameter Tuning:**
           - Adjusted parameters using techniques like cross-validation to prevent overfitting and improve generalization.
 
