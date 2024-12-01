@@ -8,6 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import boxcox
+from scipy.special import inv_boxcox  # Added for inverse Box-Cox transformation
 import pickle
 from pathlib import Path
 
@@ -176,6 +177,8 @@ def preprocess_data(df, data_reference=None):
     """
     Preprocesses the input data by handling missing values, encoding categorical variables,
     and transforming skewed features.
+    
+    **Note:** The 'SalePrice' is excluded from skewed feature transformations to preserve its original scale for visualization purposes.
     """
     df_processed = df.copy()
     
@@ -258,8 +261,10 @@ def preprocess_data(df, data_reference=None):
     # Feature engineering
     df_processed = feature_engineering(df_processed)
     
-    # Transform skewed features
+    # Transform skewed features, excluding 'SalePrice' to preserve original scale for visualization
     for feat in skewed_features:
+        if feat == 'SalePrice':
+            continue  # Skip transforming 'SalePrice'
         if feat in df_processed.columns:
             if (df_processed[feat] <= 0).any():
                 df_processed[feat] = np.log1p(df_processed[feat])
@@ -281,6 +286,9 @@ def preprocess_data(df, data_reference=None):
 
 # Load data
 data, inherited_houses = load_data()
+
+# Create a copy of the original SalePrice before preprocessing for visualization
+data_original = data[['SalePrice']].copy()
 
 # Load models and related data
 (models, scaler, selected_features, skewed_features, lam_dict, 
@@ -620,12 +628,15 @@ with tab2:
     Understanding how different features correlate with the sale price is crucial for building an effective predictive model. This section visualizes the relationships between key property attributes and the sale price.
     """)
 
+    # Prepare data for correlation using original SalePrice
+    data_for_corr = pd.concat([data.drop('SalePrice', axis=1), data_original], axis=1)
+
     # Compute correlation matrix
-    corr_matrix = data.corr()
+    corr_matrix = data_for_corr.corr()
     if 'SalePrice' not in corr_matrix.columns:
         st.error("**Error:** 'SalePrice' column not found in the dataset.")
     else:
-        # Select features with high correlation (absolute value > 0.5)
+        # Select features with high correlation (absolute value > 0.5) with original SalePrice
         top_corr_features = corr_matrix.index[abs(corr_matrix['SalePrice']) > 0.5].tolist()
 
         if len(top_corr_features) == 0:
@@ -636,9 +647,9 @@ with tab2:
             The heatmap below shows the correlation coefficients between the sale price and other features. Features with higher absolute correlation values have a stronger relationship with the sale price.
             """)
 
-            # Plot correlation heatmap
+            # Plot correlation heatmap using original SalePrice
             plt.figure(figsize=(12, 8))
-            sns.heatmap(data[top_corr_features].corr(), annot=True, cmap='RdBu', linewidths=0.5, fmt=".2f")
+            sns.heatmap(data_for_corr[top_corr_features].corr(), annot=True, cmap='RdBu', linewidths=0.5, fmt=".2f")
             plt.title('Correlation Heatmap of Top Features', fontsize=16)
             plt.xticks(rotation=45, ha='right')
             plt.yticks(rotation=0)
@@ -662,10 +673,10 @@ with tab2:
             else:
                 # To optimize performance, sample the data if it's too large
                 sample_size = 500  # Adjust based on performance
-                if data.shape[0] > sample_size:
-                    pairplot_data = data[top_features + ['SalePrice']].sample(n=sample_size, random_state=42)
+                if data_for_corr.shape[0] > sample_size:
+                    pairplot_data = data_for_corr[top_features + ['SalePrice']].sample(n=sample_size, random_state=42)
                 else:
-                    pairplot_data = data[top_features + ['SalePrice']]
+                    pairplot_data = data_for_corr[top_features + ['SalePrice']]
                 
                 sns.set(style="ticks")
                 pairplot_fig = sns.pairplot(pairplot_data, diag_kind='kde', height=2.5)
@@ -919,14 +930,16 @@ with tab4:
     # Visualization for Hypotheses
     st.write("### Visualization of Hypotheses")
 
-    # OverallQual vs SalePrice
+    # OverallQual vs SalePrice_original
     st.write("#### SalePrice vs OverallQual")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='OverallQual', y='SalePrice', data=data, palette='Set2')
+    sns.boxplot(x='OverallQual', y='SalePrice', data=data_for_corr, palette='Set2')  # Using original SalePrice
     plt.title('SalePrice vs OverallQual', fontsize=16)
     plt.xlabel('Overall Quality', fontsize=12)
-    plt.ylabel('Sale Price', fontsize=12)
+    plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
+    # Format y-axis with dollar signs
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
@@ -934,15 +947,17 @@ with tab4:
     The boxplot illustrates a clear trend where houses with higher overall quality ratings command higher sale prices. This strong positive relationship validates our first hypothesis, emphasizing the significant impact of overall quality on property value.
     """)
 
-    # TotalSF vs SalePrice
+    # TotalSF vs SalePrice_original
     st.write("#### SalePrice vs TotalSF")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='TotalSF', y='SalePrice', data=data, hue='OverallQual', palette='coolwarm', alpha=0.6)
+    sns.scatterplot(x='TotalSF', y='SalePrice', data=data_for_corr, hue='OverallQual', palette='coolwarm', alpha=0.6)  # Using original SalePrice
     plt.title('SalePrice vs TotalSF', fontsize=16)
     plt.xlabel('Total Square Footage', fontsize=12)
-    plt.ylabel('Sale Price', fontsize=12)
+    plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.legend(title='Overall Quality', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
+    # Format y-axis with dollar signs
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
@@ -950,14 +965,16 @@ with tab4:
     The scatter plot reveals a positive correlation between total square footage and sale price. Larger homes with more square footage tend to have higher sale prices, supporting our second hypothesis that size is a key determinant of property value.
     """)
 
-    # YearRemodAdd vs SalePrice
-    st.write("#### SalePrice vs YearRemodAdd")
+    # YearRemodAdd vs SalePrice_original
+    st.write("#### SalePrice vs YearRemodeled")
     plt.figure(figsize=(10, 6))
-    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data, color='green', ci=None)
+    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data_for_corr, color='green', ci=None)  # Using original SalePrice
     plt.title('SalePrice vs Year Remodeled', fontsize=16)
     plt.xlabel('Year Remodeled', fontsize=12)
-    plt.ylabel('Average Sale Price', fontsize=12)
+    plt.ylabel('Average Sale Price (USD)', fontsize=12)
     plt.tight_layout()
+    # Format y-axis with dollar signs
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
@@ -965,15 +982,17 @@ with tab4:
     The line plot shows an upward trend in sale prices with more recent remodeling years. This indicates that recent renovations and updates contribute positively to the property's market value, thereby validating our third hypothesis.
     """)
 
-    # GarageArea vs SalePrice
+    # GarageArea vs SalePrice_original
     st.write("#### SalePrice vs GarageArea")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='GarageArea', y='SalePrice', data=data, hue='GarageFinish', palette='viridis', alpha=0.6)
+    sns.scatterplot(x='GarageArea', y='SalePrice', data=data_for_corr, hue='GarageFinish', palette='viridis', alpha=0.6)  # Using original SalePrice
     plt.title('SalePrice vs GarageArea', fontsize=16)
     plt.xlabel('Garage Area (sq ft)', fontsize=12)
-    plt.ylabel('Sale Price', fontsize=12)
+    plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.legend(title='Garage Finish', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
+    # Format y-axis with dollar signs
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
@@ -981,15 +1000,17 @@ with tab4:
     The scatter plot indicates that larger garage areas are associated with higher sale prices. Additionally, the quality of the garage finish further enhances the property's value. These observations confirm our fourth hypothesis, highlighting the significant role of garage features in determining house prices.
     """)
 
-    # LotArea vs SalePrice
+    # LotArea vs SalePrice_original
     st.write("#### SalePrice vs LotArea")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='LotArea', y='SalePrice', data=data, hue='BedroomAbvGr', palette='magma', alpha=0.6)
+    sns.scatterplot(x='LotArea', y='SalePrice', data=data_for_corr, hue='BedroomAbvGr', palette='magma', alpha=0.6)  # Using original SalePrice
     plt.title('SalePrice vs LotArea', fontsize=16)
     plt.xlabel('Lot Area (sq ft)', fontsize=12)
-    plt.ylabel('Sale Price', fontsize=12)
+    plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.legend(title='Bedrooms Above Grade', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
+    # Format y-axis with dollar signs
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
@@ -997,14 +1018,16 @@ with tab4:
     The positive relationship between lot area and sale price is evident from the scatter plot. Larger lots provide more outdoor space and potential for future expansions, thereby increasing the property's appeal and market value. This supports our fifth hypothesis regarding the importance of lot size and frontage in determining house prices.
     """)
 
-    # KitchenQual vs SalePrice
+    # KitchenQual vs SalePrice_original
     st.write("#### SalePrice vs KitchenQual")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='KitchenQual', y='SalePrice', data=data, palette='Pastel1')
+    sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_corr, palette='Pastel1')  # Using original SalePrice
     plt.title('SalePrice vs KitchenQual', fontsize=16)
     plt.xlabel('Kitchen Quality', fontsize=12)
-    plt.ylabel('Sale Price', fontsize=12)
+    plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
+    # Format y-axis with dollar signs
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
@@ -1012,14 +1035,16 @@ with tab4:
     The boxplot clearly shows that houses with higher kitchen quality ratings have significantly higher sale prices. This strong positive association validates our sixth hypothesis, emphasizing the critical role of kitchen quality in enhancing property value.
     """)
 
-    # BedroomAbvGr vs SalePrice
+    # BedroomAbvGr vs SalePrice_original
     st.write("#### SalePrice vs BedroomAbvGr")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data, palette='Set3')
+    sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data_for_corr, palette='Set3')  # Using original SalePrice
     plt.title('SalePrice vs BedroomAbvGr', fontsize=16)
     plt.xlabel('Bedrooms Above Grade', fontsize=12)
-    plt.ylabel('Sale Price', fontsize=12)
+    plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
+    # Format y-axis with dollar signs
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
@@ -1187,14 +1212,19 @@ with tab5:
                     X_train, X_test, y_train, y_test = train_test_data
                     try:
                         y_pred_log = selected_model.predict(X_test)
-                        y_pred_actual = np.expm1(y_pred_log)
+                        # Inverse transformation of predictions
+                        if 'SalePrice' in lam_dict:
+                            y_pred_actual = inv_boxcox(y_pred_log, lam_dict['SalePrice'])
+                            y_test_actual = inv_boxcox(y_test, lam_dict['SalePrice'])
+                        else:
+                            y_pred_actual = np.expm1(y_pred_log)
+                            y_test_actual = np.expm1(y_test)
                         y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
-                        y_test_actual = np.expm1(y_test)
-                        
+
                         plt.figure(figsize=(10, 6))
                         sns.scatterplot(x=y_test_actual, y=y_pred_actual, color='purple', alpha=0.6)
-                        plt.xlabel('Actual Sale Price', fontsize=12)
-                        plt.ylabel('Predicted Sale Price', fontsize=12)
+                        plt.xlabel('Actual Sale Price (USD)', fontsize=12)
+                        plt.ylabel('Predicted Sale Price (USD)', fontsize=12)
                         plt.title('Actual vs Predicted Sale Prices', fontsize=16)
                         plt.plot([y_test_actual.min(), y_test_actual.max()], [y_test_actual.min(), y_test_actual.max()], 'r--', label='Perfect Prediction')
                         plt.legend()
@@ -1219,17 +1249,26 @@ with tab5:
                 if selected_model and train_test_data:
                     try:
                         y_pred_log = selected_model.predict(X_test)
-                        y_pred_actual = np.expm1(y_pred_log)
+                        # Inverse transformation of predictions
+                        if 'SalePrice' in lam_dict:
+                            y_pred_actual = inv_boxcox(y_pred_log, lam_dict['SalePrice'])
+                            y_test_actual = inv_boxcox(y_test, lam_dict['SalePrice'])
+                        else:
+                            y_pred_actual = np.expm1(y_pred_log)
+                            y_test_actual = np.expm1(y_test)
                         y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
-                        y_test_actual = np.expm1(y_test)
+                        y_test_actual[y_test_actual < 0] = 0  # Handle negative actuals if any
+
                         residuals = y_test_actual - y_pred_actual
 
                         plt.figure(figsize=(10, 6))
                         sns.histplot(residuals, kde=True, color='coral', bins=30)
                         plt.title('Residuals Distribution', fontsize=16)
-                        plt.xlabel('Residuals (Actual - Predicted)', fontsize=12)
+                        plt.xlabel('Residuals (Actual - Predicted) (USD)', fontsize=12)
                         plt.ylabel('Frequency', fontsize=12)
                         plt.tight_layout()
+                        # Format x-axis with dollar signs
+                        plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
                         st.pyplot(plt)
 
                         st.write("""
