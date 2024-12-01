@@ -11,6 +11,10 @@ from scipy.stats import boxcox
 import pickle
 from pathlib import Path
 
+# --------------------------- #
+#       Configuration          #
+# --------------------------- #
+
 # Get the directory where the script is located
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -21,15 +25,23 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Function to check if a file exists
+# --------------------------- #
+#       Helper Functions       #
+# --------------------------- #
+
 def check_file_exists(file_path, description):
+    """
+    Checks if a given file exists. If not, displays an error and stops the app.
+    """
     if not file_path.exists():
         st.error(f"**Error:** The {description} file was not found at `{file_path}`.")
         st.stop()
 
-# Load models and data with error handling
 @st.cache_data
 def load_data():
+    """
+    Loads the main dataset and the inherited houses dataset.
+    """
     data_path = BASE_DIR / 'dashboard' / 'notebook' / 'raw_data' / 'house_prices_records.csv'
     inherited_houses_path = BASE_DIR / 'dashboard' / 'notebook' / 'raw_data' / 'inherited_houses.csv'
     
@@ -53,6 +65,9 @@ def load_data():
 
 @st.cache_resource
 def load_models():
+    """
+    Loads all necessary models and related objects.
+    """
     models_dir = BASE_DIR / 'dashboard' / 'notebook' / 'data' / 'models'
     
     # Check if models directory exists
@@ -146,22 +161,20 @@ def load_models():
     
     return models, scaler, selected_features, skewed_features, lam_dict, feature_importances, model_evaluation, train_test_data
 
-# Load data
-data, inherited_houses = load_data()
-
-# Load models and related data
-(models, scaler, selected_features, skewed_features, lam_dict, 
- feature_importances, model_evaluation, train_test_data) = load_models()
-
-# Define feature engineering function
 def feature_engineering(df):
+    """
+    Performs feature engineering by creating new features.
+    """
     df = df.copy()
     df['TotalSF'] = df.get('TotalBsmtSF', 0) + df.get('1stFlrSF', 0) + df.get('2ndFlrSF', 0)
     df['Qual_TotalSF'] = df.get('OverallQual', 0) * df.get('TotalSF', 0)
     return df
 
-# Define preprocessing function
 def preprocess_data(df):
+    """
+    Preprocesses the input data by handling missing values, encoding categorical variables,
+    and transforming skewed features.
+    """
     df_processed = df.copy()
     
     # Map full words back to codes
@@ -256,8 +269,23 @@ def preprocess_data(df):
     
     return df_processed
 
-# Preprocess the data
+# --------------------------- #
+#       Load Data & Models     #
+# --------------------------- #
+
+# Load data
+data, inherited_houses = load_data()
+
+# Load models and related data
+(models, scaler, selected_features, skewed_features, lam_dict, 
+ feature_importances, model_evaluation, train_test_data) = load_models()
+
+# Preprocess the main data
 data = preprocess_data(data)
+
+# --------------------------- #
+#       Feature Metadata       #
+# --------------------------- #
 
 # Metadata for features (from the provided metadata)
 feature_metadata = {
@@ -287,6 +315,10 @@ feature_metadata = {
     'TotalSF': 'Total square feet of house (including basement)',
     'Qual_TotalSF': 'Product of OverallQual and TotalSF'
 }
+
+# --------------------------- #
+#   Feature Input Definitions #
+# --------------------------- #
 
 # Define feature input details for the user input form
 feature_input_details = {
@@ -512,6 +544,10 @@ feature_input_details = {
     },
 }
 
+# --------------------------- #
+#       Custom Styling         #
+# --------------------------- #
+
 # Apply custom CSS for enhanced UI (optional)
 st.markdown(
     """
@@ -534,11 +570,18 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# --------------------------- #
+#          Main App            #
+# --------------------------- #
+
 # Create tabs for navigation
 tabs = ["Project Summary", "Feature Correlations", "House Price Predictions", "Project Hypotheses", "Model Performance"]
 tab1, tab2, tab3, tab4, tab5 = st.tabs(tabs)
 
-# Project Summary Page
+# --------------------------- #
+#      Project Summary Tab     #
+# --------------------------- #
+
 with tab1:
     st.title("House Price Prediction Dashboard")
     st.write("""
@@ -559,7 +602,10 @@ with tab1:
     - Explore data correlations, make predictions, and understand the model performance.
     """)
 
-# Feature Correlations Page
+# --------------------------- #
+#    Feature Correlations Tab  #
+# --------------------------- #
+
 with tab2:
     st.title("Feature Correlations")
     st.write("""
@@ -573,6 +619,7 @@ with tab2:
     if 'SalePrice' not in corr_matrix.columns:
         st.error("**Error:** 'SalePrice' column not found in the dataset.")
     else:
+        # Select features with high correlation (absolute value > 0.5)
         top_corr_features = corr_matrix.index[abs(corr_matrix['SalePrice']) > 0.5]
 
         if len(top_corr_features) == 0:
@@ -626,7 +673,10 @@ with tab2:
     **Note:** Correlation does not imply causation. While features may be correlated with the sale price, further analysis is required to establish causal relationships.
     """)
 
-# House Price Predictions Page
+# --------------------------- #
+#  House Price Predictions Tab #
+# --------------------------- #
+
 with tab3:
     st.title("House Price Predictions")
 
@@ -711,6 +761,9 @@ with tab3:
     """)
 
     def user_input_features():
+        """
+        Creates a form for users to input house features and returns the input data as a DataFrame.
+        """
         input_data = {}
         with st.form(key='house_features'):
             st.write("### Enter House Attributes")
@@ -794,7 +847,10 @@ with tab3:
     5. **Output:** Receive an instant prediction of the house's market value, aiding in informed decision-making.
     """)
 
-# Project Hypotheses Page
+# --------------------------- #
+#      Project Hypotheses Tab  #
+# --------------------------- #
+
 with tab4:
     st.title("Project Hypotheses")
     st.write("""
@@ -825,6 +881,34 @@ with tab4:
     
     - **Rationale:** Modern updates and renovations can enhance a property's appeal, functionality, and energy efficiency, thereby increasing its market value.
     - **Validation:** The `YearRemodAdd` feature correlates with the sale price, indicating that more recent remodels can increase the house value.
+    """)
+
+    st.write("""
+    **Hypothesis 4:** *The presence and quality of a garage significantly influence the sale price.*
+    
+    - **Rationale:** Garages add convenience and storage space, enhancing the property's functionality. Higher-quality garages are often associated with better construction and maintenance.
+    - **Validation:** Features like `GarageArea` and `GarageFinish` show positive correlations with the sale price, validating this hypothesis.
+    """)
+
+    st.write("""
+    **Hypothesis 5:** *Lot size and frontage are key determinants of a house's market value.*
+    
+    - **Rationale:** Larger lots provide more outdoor space, which is desirable for families and can offer potential for future expansions or landscaping.
+    - **Validation:** The `LotArea` and `LotFrontage` features have significant positive correlations with the sale price, supporting this hypothesis.
+    """)
+
+    st.write("""
+    **Hypothesis 6:** *Kitchen quality is a strong predictor of a house's sale price.*
+    
+    - **Rationale:** Kitchens are central to modern living, and high-quality kitchens with modern appliances and finishes are highly sought after.
+    - **Validation:** The `KitchenQual` feature demonstrates a positive correlation with the sale price, confirming its importance.
+    """)
+
+    st.write("""
+    **Hypothesis 7:** *The number of bedrooms above grade influences the sale price.*
+    
+    - **Rationale:** More bedrooms can accommodate larger families, increasing the property's appeal to potential buyers.
+    - **Validation:** The `BedroomAbvGr` feature shows a positive correlation with the sale price, supporting this hypothesis.
     """)
 
     # Visualization for Hypotheses
@@ -861,7 +945,58 @@ with tab4:
     plt.tight_layout()
     st.pyplot(plt)
 
-# Model Performance Page
+    # GarageArea vs SalePrice
+    st.write("#### SalePrice vs GarageArea")
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x='GarageArea', y='SalePrice', data=data, hue='GarageFinish', palette='viridis', alpha=0.6)
+    plt.title('SalePrice vs GarageArea', fontsize=16)
+    plt.xlabel('Garage Area (sq ft)', fontsize=12)
+    plt.ylabel('Sale Price', fontsize=12)
+    plt.legend(title='Garage Finish', bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    st.pyplot(plt)
+
+    # LotArea vs SalePrice
+    st.write("#### SalePrice vs LotArea")
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x='LotArea', y='SalePrice', data=data, hue='BedroomAbvGr', palette='magma', alpha=0.6)
+    plt.title('SalePrice vs LotArea', fontsize=16)
+    plt.xlabel('Lot Area (sq ft)', fontsize=12)
+    plt.ylabel('Sale Price', fontsize=12)
+    plt.legend(title='Bedrooms Above Grade', bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    st.pyplot(plt)
+
+    # KitchenQual vs SalePrice
+    st.write("#### SalePrice vs KitchenQual")
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='KitchenQual', y='SalePrice', data=data, palette='Pastel1')
+    plt.title('SalePrice vs KitchenQual', fontsize=16)
+    plt.xlabel('Kitchen Quality', fontsize=12)
+    plt.ylabel('Sale Price', fontsize=12)
+    plt.tight_layout()
+    st.pyplot(plt)
+
+    # BedroomAbvGr vs SalePrice
+    st.write("#### SalePrice vs BedroomAbvGr")
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data, palette='Set3')
+    plt.title('SalePrice vs BedroomAbvGr', fontsize=16)
+    plt.xlabel('Bedrooms Above Grade', fontsize=12)
+    plt.ylabel('Sale Price', fontsize=12)
+    plt.tight_layout()
+    st.pyplot(plt)
+
+    st.write("""
+    ### Summary of Hypothesis Validations
+
+    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, lot size, kitchen quality, and the number of bedrooms above grade are significant determinants of house sale prices. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
+    """)
+
+# --------------------------- #
+#    Model Performance Tab     #
+# --------------------------- #
+
 with tab5:
     st.title("Model Performance")
     st.header("Performance Metrics")
@@ -875,194 +1010,201 @@ with tab5:
         if results_df_filtered.empty:
             st.error("**Error:** No models available after excluding 'XGBoost'.")
         else:
-            st.dataframe(results_df_filtered.style.format({'MAE': '${:,.2f}', 'RMSE': '${:,.2f}', 'R² Score': '{:.4f}'}))
+            # Check if necessary columns are present
+            if 'RMSE' not in results_df_filtered.columns or 'Model' not in results_df_filtered.columns:
+                st.error("**Error:** 'RMSE' or 'Model' columns not found in the evaluation results.")
+            else:
+                st.write("""
+                ### Model Evaluation Metrics
 
-            # Determine best model based on RMSE
-            if 'RMSE' in results_df_filtered.columns and 'Model' in results_df_filtered.columns:
+                The table below presents the performance metrics of various regression models. These metrics help in assessing the accuracy and reliability of each model.
+                """)
+
+                st.dataframe(results_df_filtered.style.format({'MAE': '${:,.2f}', 'RMSE': '${:,.2f}', 'R² Score': '{:.4f}'}))
+
+                # Determine best model based on RMSE
                 best_model_row = results_df_filtered.loc[results_df_filtered['RMSE'].idxmin()]
                 best_model_name = best_model_row['Model']
                 st.write(f"### Best Performing Model: **{best_model_name}**")
                 st.write(f"""
                 Based on the RMSE metric, **{best_model_name}** emerges as the top-performing model. It strikes an optimal balance between minimizing prediction errors and maintaining computational efficiency.
                 """)
-            else:
-                st.warning("**Warning:** 'RMSE' or 'Model' columns not found in the evaluation results.")
 
-            st.write("""
-            ### Understanding the Metrics
+                st.write("""
+                ### Understanding the Metrics
 
-            - **Mean Absolute Error (MAE):** Represents the average absolute difference between predicted and actual sale prices. A lower MAE indicates better model accuracy.
-            - **Root Mean Squared Error (RMSE):** Similar to MAE but penalizes larger errors more heavily. Lower RMSE values signify a more precise model.
-            - **R² Score:** Measures the proportion of variance in the sale price that is predictable from the features. An R² closer to 1 indicates a model that explains a large portion of the variance.
-            """)
+                - **Mean Absolute Error (MAE):** Represents the average absolute difference between predicted and actual sale prices. A lower MAE indicates better model accuracy.
+                - **Root Mean Squared Error (RMSE):** Similar to MAE but penalizes larger errors more heavily. Lower RMSE values signify a more precise model.
+                - **R² Score:** Measures the proportion of variance in the sale price that is predictable from the features. An R² closer to 1 indicates a model that explains a large portion of the variance.
+                """)
 
-            st.header("Detailed Pipeline Explanation")
-            st.write("""
-            The success of our predictive model hinges on a meticulously crafted pipeline that encompasses data preprocessing, feature engineering, model training, and evaluation. Here's an in-depth look into each stage:
-            """)
+                st.header("Detailed Pipeline Explanation")
+                st.write("""
+                The success of our predictive model hinges on a meticulously crafted pipeline that encompasses data preprocessing, feature engineering, model training, and evaluation. Here's an in-depth look into each stage:
+                """)
 
-            st.write("""
-            ### 1. Data Collection and Understanding
-            - **Datasets Used:**
-              - **Historical House Sale Data:** Contains features and sale prices of houses.
-              - **Inherited Houses Data:** Contains features of houses for which sale prices need to be predicted.
-            - **Exploratory Data Analysis (EDA):**
-              - Assessed data shapes, types, and initial statistics.
-              - Identified potential relationships and patterns.
-            """)
+                st.write("""
+                ### 1. Data Collection and Understanding
+                - **Datasets Used:**
+                  - **Historical House Sale Data:** Contains features and sale prices of houses.
+                  - **Inherited Houses Data:** Contains features of houses for which sale prices need to be predicted.
+                - **Exploratory Data Analysis (EDA):**
+                  - Assessed data shapes, types, and initial statistics.
+                  - Identified potential relationships and patterns.
+                """)
 
-            st.write("""
-            ### 2. Data Cleaning
-            - **Handling Missing Values:**
-              - **Numerical Features:** Filled missing values with zeros or the median of the feature.
-              - **Categorical Features:** Filled missing values with the mode or a default category.
-              - **Verification:** Confirmed that no missing values remained after imputation.
-            """)
+                st.write("""
+                ### 2. Data Cleaning
+                - **Handling Missing Values:**
+                  - **Numerical Features:** Filled missing values with zeros or the median of the feature.
+                  - **Categorical Features:** Filled missing values with the mode or a default category.
+                  - **Verification:** Confirmed that no missing values remained after imputation.
+                """)
 
-            st.write("""
-            ### 3. Feature Engineering
-            - **Categorical Encoding:**
-              - Applied ordinal encoding to convert categorical features into numerical values based on domain knowledge.
-            - **Creation of New Features:**
-              - **TotalSF:** Combined total square footage of the house, including basement and above-ground areas.
-              - **Qual_TotalSF:** Product of `OverallQual` and `TotalSF` to capture the combined effect of size and quality on sale price.
-            """)
+                st.write("""
+                ### 3. Feature Engineering
+                - **Categorical Encoding:**
+                  - Applied ordinal encoding to convert categorical features into numerical values based on domain knowledge.
+                - **Creation of New Features:**
+                  - **TotalSF:** Combined total square footage of the house, including basement and above-ground areas.
+                  - **Qual_TotalSF:** Product of `OverallQual` and `TotalSF` to capture the combined effect of size and quality on sale price.
+                """)
 
-            st.write("""
-            ### 4. Feature Transformation
-            - **Addressing Skewness:**
-              - Identified skewed features using skewness metrics.
-              - Applied log transformation or Box-Cox transformation to normalize distributions.
-            """)
+                st.write("""
+                ### 4. Feature Transformation
+                - **Addressing Skewness:**
+                  - Identified skewed features using skewness metrics.
+                  - Applied log transformation or Box-Cox transformation to normalize distributions.
+                """)
 
-            st.write("""
-            ### 5. Feature Selection
-            - **Random Forest Feature Importances:**
-              - Utilized a Random Forest model to evaluate the importance of each feature in predicting sale prices.
-              - Selected top-performing features that significantly contribute to the model's predictive accuracy.
-            """)
+                st.write("""
+                ### 5. Feature Selection
+                - **Random Forest Feature Importances:**
+                  - Utilized a Random Forest model to evaluate the importance of each feature in predicting sale prices.
+                  - Selected top-performing features that significantly contribute to the model's predictive accuracy.
+                """)
 
-            st.write("""
-            ### 6. Data Scaling
-            - **Standardization:**
-              - Employed `StandardScaler` to standardize numerical features, ensuring they have a mean of 0 and a standard deviation of 1.
-              - Essential for models sensitive to feature scales, such as Ridge and Lasso regressions.
-            """)
+                st.write("""
+                ### 6. Data Scaling
+                - **Standardization:**
+                  - Employed `StandardScaler` to standardize numerical features, ensuring they have a mean of 0 and a standard deviation of 1.
+                  - Essential for models sensitive to feature scales, such as Ridge and Lasso regressions.
+                """)
 
-            st.write("""
-            ### 7. Model Training
-            - **Algorithms Used:**
-              - Linear Regression, Ridge Regression, Lasso Regression, ElasticNet, Random Forest, Gradient Boosting.
-            - **Hyperparameter Tuning:**
-              - Conducted using cross-validation techniques to identify optimal model parameters, ensuring generalizability and minimizing overfitting.
-            """)
+                st.write("""
+                ### 7. Model Training
+                - **Algorithms Used:**
+                  - Linear Regression, Ridge Regression, Lasso Regression, ElasticNet, Random Forest, Gradient Boosting.
+                - **Hyperparameter Tuning:**
+                  - Conducted using cross-validation techniques to identify optimal model parameters, ensuring generalizability and minimizing overfitting.
+                """)
 
-            st.write("""
-            ### 8. Model Evaluation
-            - **Performance Metrics:**
-              - **Mean Absolute Error (MAE):** Provides a straightforward measure of average prediction error.
-              - **Root Mean Squared Error (RMSE):** Offers insight into the magnitude of errors, with higher penalties for larger deviations.
-              - **R² Score:** Indicates the proportion of variance in the sale price explained by the model, with higher values signifying better fit.
-            - **Best Model Selection:**
-              - Evaluated models based on RMSE and R² Score, selecting the one that demonstrates the lowest error and highest explanatory power.
-            """)
+                st.write("""
+                ### 8. Model Evaluation
+                - **Performance Metrics:**
+                  - **Mean Absolute Error (MAE):** Provides a straightforward measure of average prediction error.
+                  - **Root Mean Squared Error (RMSE):** Offers insight into the magnitude of errors, with higher penalties for larger deviations.
+                  - **R² Score:** Indicates the proportion of variance in the sale price explained by the model, with higher values signifying better fit.
+                - **Best Model Selection:**
+                  - Evaluated models based on RMSE and R² Score, selecting the one that demonstrates the lowest error and highest explanatory power.
+                """)
 
-            st.write("""
-            ### 9. Deployment
-            - **Interactive Dashboard:**
-              - Developed using Streamlit to provide a user-friendly interface for real-time interaction.
-              - Allows users to input house features and obtain immediate sale price estimates.
-              - Incorporates visual insights into feature correlations, model performance, and hypothesis validations to enhance user understanding.
-            """)
+                st.write("""
+                ### 9. Deployment
+                - **Interactive Dashboard:**
+                  - Developed using Streamlit to provide a user-friendly interface for real-time interaction.
+                  - Allows users to input house features and obtain immediate sale price estimates.
+                  - Incorporates visual insights into feature correlations, model performance, and hypothesis validations to enhance user understanding.
+                """)
 
-            st.header("Feature Importances")
-            # Display feature importances from the best-performing model
-            if best_model_name in models:
-                # Assuming feature_importances.csv has 'Feature' and 'Importance' columns
-                feature_importances_best = feature_importances
+                st.header("Feature Importances")
+                # Display feature importances from the best-performing model
+                if best_model_name in models:
+                    # Assuming feature_importances.csv has 'Feature' and 'Importance' columns
+                    feature_importances_best = feature_importances
 
-                if feature_importances_best.empty:
-                    st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
+                    if feature_importances_best.empty:
+                        st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
+                    else:
+                        plt.figure(figsize=(12, 8))
+                        sns.barplot(x='Importance', y='Feature', data=feature_importances_best.sort_values(by='Importance', ascending=False), palette='viridis')
+                        plt.title(f'Feature Importances from {best_model_name}', fontsize=16)
+                        plt.xlabel('Importance', fontsize=12)
+                        plt.ylabel('Feature', fontsize=12)
+                        plt.tight_layout()
+                        st.pyplot(plt)
+
+                        st.write("""
+                        The bar chart above illustrates the relative importance of each feature in predicting the sale price. Notably, features like `GrLivArea`, `OverallQual`, and `TotalSF` are among the most significant contributors, reaffirming their critical role in determining property values.
+                        """)
                 else:
-                    plt.figure(figsize=(12, 8))
-                    sns.barplot(x='Importance', y='Feature', data=feature_importances_best.sort_values(by='Importance', ascending=False), palette='viridis')
-                    plt.title(f'Feature Importances from {best_model_name}', fontsize=16)
-                    plt.xlabel('Importance', fontsize=12)
-                    plt.ylabel('Feature', fontsize=12)
-                    plt.tight_layout()
-                    st.pyplot(plt)
+                    st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
 
-                    st.write("""
-                    The bar chart above illustrates the relative importance of each feature in predicting the sale price. Notably, features like `GrLivArea`, `OverallQual`, and `TotalSF` are among the most significant contributors, reaffirming their critical role in determining property values.
-                    """)
-            else:
-                st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
+                st.header("Actual vs Predicted Prices")
+                selected_model = models.get(best_model_name)
+                if selected_model and train_test_data:
+                    X_train, X_test, y_train, y_test = train_test_data
+                    try:
+                        y_pred_log = selected_model.predict(X_test)
+                        y_pred_actual = np.expm1(y_pred_log)
+                        y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
+                        y_test_actual = np.expm1(y_test)
+                        
+                        plt.figure(figsize=(10, 6))
+                        sns.scatterplot(x=y_test_actual, y=y_pred_actual, color='purple', alpha=0.6)
+                        plt.xlabel('Actual Sale Price', fontsize=12)
+                        plt.ylabel('Predicted Sale Price', fontsize=12)
+                        plt.title('Actual vs Predicted Sale Prices', fontsize=16)
+                        plt.plot([y_test_actual.min(), y_test_actual.max()], [y_test_actual.min(), y_test_actual.max()], 'r--', label='Perfect Prediction')
+                        plt.legend()
+                        plt.tight_layout()
+                        st.pyplot(plt)
 
-            st.header("Actual vs Predicted Prices")
-            selected_model = models.get(best_model_name)
-            if selected_model and train_test_data:
-                X_train, X_test, y_train, y_test = train_test_data
-                try:
-                    y_pred_log = selected_model.predict(X_test)
-                    y_pred_actual = np.expm1(y_pred_log)
-                    y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
-                    y_test_actual = np.expm1(y_test)
-                    
-                    plt.figure(figsize=(10, 6))
-                    sns.scatterplot(x=y_test_actual, y=y_pred_actual, color='purple', alpha=0.6)
-                    plt.xlabel('Actual Sale Price', fontsize=12)
-                    plt.ylabel('Predicted Sale Price', fontsize=12)
-                    plt.title('Actual vs Predicted Sale Prices', fontsize=16)
-                    plt.plot([y_test_actual.min(), y_test_actual.max()], [y_test_actual.min(), y_test_actual.max()], 'r--', label='Perfect Prediction')
-                    plt.legend()
-                    plt.tight_layout()
-                    st.pyplot(plt)
+                        st.write("""
+                        **Analysis:**
+                        
+                        The scatter plot compares the actual sale prices with the predicted sale prices. The red dashed line represents perfect predictions, where predicted values exactly match the actual values. The proximity of the data points to this line indicates the model's accuracy. Closer alignment signifies higher prediction precision.
+                        
+                        **Observations:**
+                        - Most predictions cluster around the perfect prediction line, demonstrating the model's reliability.
+                        - A few outliers exist, which could be due to unique property features or data anomalies.
+                        """)
+                    except Exception as e:
+                        st.error(f"**Error during Actual vs Predicted Prices plotting:** {e}")
+                else:
+                    st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
 
-                    st.write("""
-                    **Analysis:**
-                    
-                    The scatter plot compares the actual sale prices with the predicted sale prices. The red dashed line represents perfect predictions, where predicted values exactly match the actual values. The proximity of the data points to this line indicates the model's accuracy. Closer alignment signifies higher prediction precision.
-                    
-                    **Observations:**
-                    - Most predictions cluster around the perfect prediction line, demonstrating the model's reliability.
-                    - A few outliers exist, which could be due to unique property features or data anomalies.
-                    """)
-                except Exception as e:
-                    st.error(f"**Error during Actual vs Predicted Prices plotting:** {e}")
-            else:
-                st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
+                st.header("Residual Analysis")
+                if selected_model and train_test_data:
+                    try:
+                        y_pred_log = selected_model.predict(X_test)
+                        y_pred_actual = np.expm1(y_pred_log)
+                        y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
+                        y_test_actual = np.expm1(y_test)
+                        residuals = y_test_actual - y_pred_actual
 
-            st.header("Residual Analysis")
-            if selected_model and train_test_data:
-                try:
-                    y_pred_log = selected_model.predict(X_test)
-                    y_pred_actual = np.expm1(y_pred_log)
-                    y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
-                    y_test_actual = np.expm1(y_test)
-                    residuals = y_test_actual - y_pred_actual
+                        plt.figure(figsize=(10, 6))
+                        sns.histplot(residuals, kde=True, color='coral', bins=30)
+                        plt.title('Residuals Distribution', fontsize=16)
+                        plt.xlabel('Residuals (Actual - Predicted)', fontsize=12)
+                        plt.ylabel('Frequency', fontsize=12)
+                        plt.tight_layout()
+                        st.pyplot(plt)
 
-                    plt.figure(figsize=(10, 6))
-                    sns.histplot(residuals, kde=True, color='coral', bins=30)
-                    plt.title('Residuals Distribution', fontsize=16)
-                    plt.xlabel('Residuals (Actual - Predicted)', fontsize=12)
-                    plt.ylabel('Frequency', fontsize=12)
-                    plt.tight_layout()
-                    st.pyplot(plt)
-
-                    st.write("""
-                    **Understanding Residuals:**
-                    
-                    Residuals represent the differences between actual and predicted sale prices. Analyzing their distribution helps in assessing the model's performance and identifying any underlying patterns or biases.
-                    
-                    **Key Insights:**
-                    - **Normal Distribution:** Residuals are approximately normally distributed around zero, indicating that the model's errors are random and unbiased.
-                    - **Symmetry:** The symmetrical spread suggests consistent performance across different sale price ranges.
-                    - **Outliers:** Minimal skewness and few outliers indicate that the model handles most data points effectively, with only a handful of predictions deviating significantly.
-                    """)
-                except Exception as e:
-                    st.error(f"**Error during Residual Analysis plotting:** {e}")
-            else:
-                st.warning("**Warning:** Cannot perform residual analysis without the selected model and necessary data.")
+                        st.write("""
+                        **Understanding Residuals:**
+                        
+                        Residuals represent the differences between actual and predicted sale prices. Analyzing their distribution helps in assessing the model's performance and identifying any underlying patterns or biases.
+                        
+                        **Key Insights:**
+                        - **Normal Distribution:** Residuals are approximately normally distributed around zero, indicating that the model's errors are random and unbiased.
+                        - **Symmetry:** The symmetrical spread suggests consistent performance across different sale price ranges.
+                        - **Outliers:** Minimal skewness and few outliers indicate that the model handles most data points effectively, with only a handful of predictions deviating significantly.
+                        """)
+                    except Exception as e:
+                        st.error(f"**Error during Residual Analysis plotting:** {e}")
+                else:
+                    st.warning("**Warning:** Cannot perform residual analysis without the selected model and necessary data.")
 
     st.write("""
     ### Conclusion
@@ -1077,3 +1219,6 @@ with tab5:
     - **Continuous Monitoring:** Implement mechanisms to monitor model performance over time, ensuring sustained accuracy and relevance.
     """)
 
+# --------------------------- #
+#          End of App          #
+# --------------------------- #
