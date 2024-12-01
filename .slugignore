@@ -7,12 +7,6 @@ venv/
 .env/
 .venv/
 
-# Ignore data files not needed at runtime
-dashboard/notebook/raw_data/
-dashboard/notebook/finalnb.ipynb
-dashboard/notebook/data/models/selected_features.pkl
-dashboard/notebook/data/models/skewed_features.pkl
-dashboard/notebook/data/models/lam_dict.pkl
 
 # Ignore test files
 tests/
