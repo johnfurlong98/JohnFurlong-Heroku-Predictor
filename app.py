@@ -1060,6 +1060,42 @@ with tab4:
     The boxplot indicates a positive trend where an increasing number of bedrooms above grade correlates with higher sale prices. This finding supports our seventh hypothesis, demonstrating that more bedrooms enhance the property's appeal and market value.
     """)
 
+    # Feature Relationships (Excluding OverallQual)
+    st.write("### Feature Relationships (Excluding OverallQual)")
+    # Select features excluding 'OverallQual'
+    feature_relations = [feat for feat in selected_features if feat != 'OverallQual']
+    if len(feature_relations) < 2:
+        st.warning("**Warning:** Not enough features to create a feature relationships plot excluding 'OverallQual'.")
+    else:
+        # Select top 5 features excluding 'OverallQual' for clarity
+        top_features_rel = feature_relations[:5]
+        # Prepare data for pairplot
+        pairplot_data = data_for_corr[top_features_rel + ['SalePrice']]
+
+        # To optimize performance, sample the data if it's too large
+        sample_size = 500  # Adjust based on performance
+        if pairplot_data.shape[0] > sample_size:
+            pairplot_data = pairplot_data.sample(n=sample_size, random_state=42)
+
+        sns.set(style="ticks")
+        pairplot_fig = sns.pairplot(pairplot_data, diag_kind='kde', height=2.5)
+        plt.suptitle('Feature Relationships Excluding OverallQual', y=1.02)
+        st.pyplot(pairplot_fig)
+
+        st.write("""
+        **Feature Relationships:**
+
+        The pairplot above visualizes the relationships between selected features and the sale price, excluding the top feature `OverallQual`. This provides a clearer view of how other significant features interact with the sale price.
+
+        **Detailed Insights:**
+
+        - **Total Basement Area (`TotalBsmtSF`) vs. SalePrice:** Indicates that larger basement areas contribute significantly to higher sale prices.
+        - **Garage Area (`GarageArea`) vs. SalePrice:** Shows a positive relationship where bigger garages enhance the property's value.
+        - **Lot Frontage (`LotFrontage`) vs. SalePrice:** Demonstrates that properties with greater lot frontage tend to have higher sale prices.
+        - **Bedroom Above Grade (`BedroomAbvGr`) vs. SalePrice:** Suggests that more bedrooms above grade increase the property's market value.
+        - **Masonry Veneer Area (`MasVnrArea`) vs. SalePrice:** Reflects that properties with larger masonry veneer areas are valued higher.
+        """)
+
     st.write("""
     ### Summary of Hypothesis Validations
 
@@ -1214,62 +1250,10 @@ with tab5:
                 else:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
 
-                st.header("Actual vs. Predicted Sale Price")
-                if best_model_name in models and train_test_data:
-                    selected_model = models[best_model_name]
-                    X_train, X_test, y_train, y_test = train_test_data
-                    try:
-                        y_pred_log = selected_model.predict(X_test)
-                        # Inverse transformation of predictions
-                        if 'SalePrice' in lam_dict:
-                            y_pred_actual = inv_boxcox(y_pred_log, lam_dict['SalePrice'])
-                            y_test_actual = inv_boxcox(y_test, lam_dict['SalePrice'])
-                        else:
-                            y_pred_actual = np.expm1(y_pred_log)
-                            y_test_actual = np.expm1(y_test)
-                        y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
-                        y_test_actual[y_test_actual < 0] = 0  # Handle negative actuals if any
-
-                        # Create a DataFrame for plotting
-                        comparison_df = pd.DataFrame({
-                            'Actual Sale Price': y_test_actual,
-                            'Predicted Sale Price': y_pred_actual
-                        })
-
-                        plt.figure(figsize=(10, 6))
-                        sns.scatterplot(x='Actual Sale Price', y='Predicted Sale Price', data=comparison_df, alpha=0.6)
-                        plt.plot([comparison_df.min().min(), comparison_df.max().max()], 
-                                 [comparison_df.min().min(), comparison_df.max().max()], 
-                                 color='red', linestyle='--')
-                        plt.title('Actual vs. Predicted Sale Price', fontsize=16)
-                        plt.xlabel('Actual Sale Price (USD)', fontsize=12)
-                        plt.ylabel('Predicted Sale Price (USD)', fontsize=12)
-                        plt.tight_layout()
-                        # Format axes with dollar signs
-                        plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
-                        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
-                        st.pyplot(plt)
-
-                        st.write("""
-                        **Actual vs. Predicted Sale Price:**
-
-                        The scatter plot above compares the actual sale prices against the predicted sale prices from the model. The red dashed line represents perfect predictions (where predicted values equal actual values).
-
-                        **Key Insights:**
-
-                        - **Model Accuracy:** Points closely clustered around the red dashed line indicate accurate predictions.
-                        - **Underestimation/Overestimation:** Deviations from the line show instances where the model underestimates or overestimates the sale price.
-                        - **Overall Performance:** The tight clustering of points suggests that the model performs well across a wide range of sale prices.
-                        """)
-                    except Exception as e:
-                        st.error(f"**Error during Actual vs. Predicted plotting:** {e}")
-                else:
-                    st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
-
     st.write("""
     ### Conclusion
 
-    The comprehensive evaluation of our regression models underscores the effectiveness of our predictive pipeline. By meticulously preprocessing data, engineering relevant features, and selecting robust models, we've achieved high prediction accuracy and reliability. The insights derived from feature importance and the Actual vs. Predicted Sale Price plot further validate our approach, ensuring that the dashboard provides meaningful and actionable information to its users.
+    The comprehensive evaluation of our regression models underscores the effectiveness of our predictive pipeline. By meticulously preprocessing data, engineering relevant features, and selecting robust models, we've achieved high prediction accuracy and reliability. The insights derived from feature importance further validate our approach, ensuring that the dashboard provides meaningful and actionable information to its users.
 
     **Next Steps:**
 
