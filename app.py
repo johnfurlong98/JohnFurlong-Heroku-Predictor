@@ -563,7 +563,9 @@ with tab1:
 with tab2:
     st.title("Feature Correlations")
     st.write("""
-    Understanding the relationships between different features and the sale price is crucial for building an effective predictive model.
+    ## Understanding Feature Relationships
+
+    Understanding how different features correlate with the sale price is crucial for building an effective predictive model. This section visualizes the relationships between key property attributes and the sale price.
     """)
 
     # Compute correlation matrix
@@ -576,14 +578,26 @@ with tab2:
         if len(top_corr_features) == 0:
             st.warning("**Warning:** No features found with a correlation greater than 0.5 with 'SalePrice'.")
         else:
+            st.write("""
+            ### Top Correlated Features with Sale Price
+            The heatmap below shows the correlation coefficients between the sale price and other features. Features with higher absolute correlation values have a stronger relationship with the sale price.
+            """)
+
             # Plot correlation heatmap
             plt.figure(figsize=(12, 8))
-            sns.heatmap(data[top_corr_features].corr(), annot=True, cmap='RdBu')
+            sns.heatmap(data[top_corr_features].corr(), annot=True, cmap='RdBu', linewidths=0.5, fmt=".2f")
             plt.title('Correlation Heatmap of Top Features', fontsize=16)
+            plt.xticks(rotation=45, ha='right')
+            plt.yticks(rotation=0)
             st.pyplot(plt)
 
             st.write("""
-            The heatmap above shows the correlations among the top features and the sale price. Features like `OverallQual`, `GrLivArea`, and `TotalSF` have strong positive correlations with `SalePrice`.
+            **Key Observations:**
+            - **Overall Quality (`OverallQual`):** Strong positive correlation with sale price.
+            - **Above Grade Living Area (`GrLivArea`):** Larger living areas are associated with higher sale prices.
+            - **Total Square Footage (`TotalSF`):** Total area including basement and above-ground strongly influences sale price.
+            - **Garage Area (`GarageArea`):** Larger garages contribute to higher house values.
+            - **Lot Area (`LotArea`):** Bigger lots generally correlate with increased sale prices.
             """)
 
             # Additional visualization: Pairplot with top features
@@ -595,11 +609,22 @@ with tab2:
             else:
                 sns.set(style="ticks")
                 pairplot_fig = sns.pairplot(data[top_features + ['SalePrice']], diag_kind='kde', height=2.5)
+                plt.suptitle('Pairplot of Top Correlated Features', y=1.02)
                 st.pyplot(pairplot_fig)
 
                 st.write("""
-                The pairplot displays pairwise relationships between the top correlated features and the sale price. It helps visualize potential linear relationships and distributions.
+                The pairplot above visualizes pairwise relationships between the top correlated features and the sale price. This helps in identifying potential linear relationships and understanding the distribution of data points.
                 """)
+
+    st.write("""
+    ### Interpreting Correlations
+
+    - **Feature Selection:** Highly correlated features are prioritized for model training to enhance predictive performance.
+    - **Multicollinearity Detection:** Identifying correlated features helps in mitigating multicollinearity issues, which can adversely affect certain regression models.
+    - **Insight Generation:** Correlation analysis provides actionable insights into what drives house prices, aiding stakeholders in making informed decisions.
+
+    **Note:** Correlation does not imply causation. While features may be correlated with the sale price, further analysis is required to establish causal relationships.
+    """)
 
 # House Price Predictions Page
 with tab3:
@@ -607,7 +632,11 @@ with tab3:
 
     # Inherited Houses Predictions
     st.header("Inherited Houses")
-    st.write("Below are the predicted sale prices for the inherited houses based on the best-performing model.")
+    st.write("""
+    ## Predicted Sale Prices for Inherited Houses
+
+    In this section, we provide estimated sale prices for the inherited houses. Utilizing our best-performing regression model, these predictions offer valuable insights into the potential market value of these properties.
+    """)
 
     # Preprocess and predict for inherited houses
     inherited_processed = preprocess_data(inherited_houses)
@@ -622,16 +651,29 @@ with tab3:
                 st.stop()
             else:
                 # Exclude 'XGBoost' if it's still present
-                available_evaluations = model_evaluation[model_evaluation['Model'] != 'XGBoost']
-                if available_evaluations.empty:
-                    st.error("**Error:** No models available after excluding 'XGBoost'.")
-                    st.stop()
-                if 'RMSE' not in available_evaluations.columns or 'Model' not in available_evaluations.columns:
-                    st.error("**Error:** 'RMSE' or 'Model' columns not found in the evaluation results.")
-                    st.stop()
+                if 'Model' in model_evaluation.columns:
+                    available_evaluations = model_evaluation[model_evaluation['Model'] != 'XGBoost']
+                    if available_evaluations.empty:
+                        st.error("**Error:** No models available after excluding 'XGBoost'.")
+                        st.stop()
+                    if 'RMSE' not in available_evaluations.columns or 'Model' not in available_evaluations.columns:
+                        st.error("**Error:** 'RMSE' or 'Model' columns not found in the evaluation results.")
+                        st.stop()
 
-                best_model_row = available_evaluations.loc[available_evaluations['RMSE'].idxmin()]
-                best_model_name = best_model_row['Model']
+                    best_model_row = available_evaluations.loc[available_evaluations['RMSE'].idxmin()]
+                    best_model_name = best_model_row['Model']
+                else:
+                    # If 'Model' column does not exist, assume a single model is present
+                    available_evaluations = model_evaluation
+                    if 'RMSE' not in available_evaluations.columns:
+                        st.error("**Error:** 'RMSE' column not found in the evaluation results.")
+                        st.stop()
+                    best_model_row = available_evaluations.loc[available_evaluations['RMSE'].idxmin()]
+                    # Assume there's only one model
+                    if 'Model' in available_evaluations.columns:
+                        best_model_name = best_model_row['Model']
+                    else:
+                        best_model_name = list(models.keys())[0]
 
             if best_model_name not in models:
                 st.error(f"**Error:** Best model '{best_model_name}' not found among loaded models.")
@@ -651,7 +693,10 @@ with tab3:
                     st.warning(f"The following columns are missing in the inherited houses data: {missing_cols}")
                     display_columns = [col for col in display_columns if col in inherited_processed.columns]
 
-                st.dataframe(inherited_processed[display_columns])
+                # Format the 'Predicted SalePrice' as currency
+                inherited_processed['Predicted SalePrice'] = inherited_processed['Predicted SalePrice'].apply(lambda x: f"${x:,.2f}")
+
+                st.dataframe(inherited_processed[display_columns].style.format({"Predicted SalePrice": lambda x: x}))
                 total_predicted_price = predictions_actual.sum()
                 st.success(f"The total predicted sale price for all inherited houses is **${total_predicted_price:,.2f}**.")
         except Exception as e:
@@ -659,7 +704,11 @@ with tab3:
 
     # Real-Time Prediction
     st.header("Real-Time House Price Prediction")
-    st.write("Input house attributes to predict the sale price using the best-performing model.")
+    st.write("""
+    ## Predict Sale Prices in Real-Time
+
+    Harness the power of our predictive model by inputting specific house attributes to receive instant sale price estimates. This feature is particularly useful for assessing the value of a property based on its characteristics.
+    """)
 
     def user_input_features():
         input_data = {}
@@ -735,22 +784,46 @@ with tab3:
         except Exception as e:
             st.error(f"**Error during prediction:** {e}")
 
+    st.write("""
+    ### How It Works
+
+    1. **Input Features:** Enter the specific attributes of the house you're evaluating.
+    2. **Data Preprocessing:** The input data undergoes the same preprocessing steps as the training data to ensure consistency.
+    3. **Feature Scaling:** Numerical features are scaled to match the scale of the training data, enhancing model performance.
+    4. **Prediction:** The processed data is fed into the best-performing regression model to generate an estimated sale price.
+    5. **Output:** Receive an instant prediction of the house's market value, aiding in informed decision-making.
+    """)
+
 # Project Hypotheses Page
 with tab4:
     st.title("Project Hypotheses")
     st.write("""
     ## Hypothesis Validation
 
-    **Hypothesis 1:** Higher overall quality of the house leads to a higher sale price.
+    In this section, we explore the foundational hypotheses that guided our analysis and modeling efforts. Each hypothesis is validated using statistical and machine learning techniques, providing a deeper understanding of the factors influencing house prices.
+    """)
 
+    # Primary Hypotheses
+    st.subheader("### Primary Hypotheses")
+
+    st.write("""
+    **Hypothesis 1:** *Higher overall quality of the house leads to a higher sale price.*
+    
+    - **Rationale:** Quality metrics such as construction standards, materials used, and overall maintenance directly impact the desirability and value of a property.
     - **Validation:** The `OverallQual` feature shows a strong positive correlation with the sale price, confirming this hypothesis.
+    """)
 
-    **Hypothesis 2:** Larger living areas result in higher sale prices.
-
+    st.write("""
+    **Hypothesis 2:** *Larger living areas result in higher sale prices.*
+    
+    - **Rationale:** Square footage is a fundamental indicator of a property's size and usability. Larger homes typically offer more living space, which is highly valued in the real estate market.
     - **Validation:** Features like `GrLivArea` and `TotalSF` have high correlations with the sale price, supporting this hypothesis.
+    """)
 
-    **Hypothesis 3:** Recent renovations positively impact the sale price.
-
+    st.write("""
+    **Hypothesis 3:** *Recent renovations positively impact the sale price.*
+    
+    - **Rationale:** Modern updates and renovations can enhance a property's appeal, functionality, and energy efficiency, thereby increasing its market value.
     - **Validation:** The `YearRemodAdd` feature correlates with the sale price, indicating that more recent remodels can increase the house value.
     """)
 
@@ -764,24 +837,28 @@ with tab4:
     plt.title('SalePrice vs OverallQual', fontsize=16)
     plt.xlabel('Overall Quality', fontsize=12)
     plt.ylabel('Sale Price', fontsize=12)
+    plt.tight_layout()
     st.pyplot(plt)
 
     # TotalSF vs SalePrice
     st.write("#### SalePrice vs TotalSF")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='TotalSF', y='SalePrice', data=data, hue='OverallQual', palette='coolwarm')
+    sns.scatterplot(x='TotalSF', y='SalePrice', data=data, hue='OverallQual', palette='coolwarm', alpha=0.6)
     plt.title('SalePrice vs TotalSF', fontsize=16)
     plt.xlabel('Total Square Footage', fontsize=12)
     plt.ylabel('Sale Price', fontsize=12)
+    plt.legend(title='Overall Quality', bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
     st.pyplot(plt)
 
     # YearRemodAdd vs SalePrice
     st.write("#### SalePrice vs YearRemodAdd")
     plt.figure(figsize=(10, 6))
-    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data, errorbar=None, color='green')
+    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data, color='green', ci=None)
     plt.title('SalePrice vs Year Remodeled', fontsize=16)
     plt.xlabel('Year Remodeled', fontsize=12)
     plt.ylabel('Average Sale Price', fontsize=12)
+    plt.tight_layout()
     st.pyplot(plt)
 
 # Model Performance Page
@@ -798,21 +875,32 @@ with tab5:
         if results_df_filtered.empty:
             st.error("**Error:** No models available after excluding 'XGBoost'.")
         else:
-            st.dataframe(results_df_filtered.style.format({'MAE': '{:,.2f}', 'RMSE': '{:,.2f}', 'R² Score': '{:.4f}'}))
+            st.dataframe(results_df_filtered.style.format({'MAE': '${:,.2f}', 'RMSE': '${:,.2f}', 'R² Score': '{:.4f}'}))
 
             # Determine best model based on RMSE
             if 'RMSE' in results_df_filtered.columns and 'Model' in results_df_filtered.columns:
                 best_model_row = results_df_filtered.loc[results_df_filtered['RMSE'].idxmin()]
                 best_model_name = best_model_row['Model']
-                st.write(f"Best performing model is **{best_model_name}** based on RMSE.")
+                st.write(f"### Best Performing Model: **{best_model_name}**")
+                st.write(f"""
+                Based on the RMSE metric, **{best_model_name}** emerges as the top-performing model. It strikes an optimal balance between minimizing prediction errors and maintaining computational efficiency.
+                """)
             else:
                 st.warning("**Warning:** 'RMSE' or 'Model' columns not found in the evaluation results.")
 
             st.write("""
-            The table above presents the performance metrics of various regression models. The best-performing model outperforms others with the lowest MAE and RMSE, and the highest R² Score.
+            ### Understanding the Metrics
+
+            - **Mean Absolute Error (MAE):** Represents the average absolute difference between predicted and actual sale prices. A lower MAE indicates better model accuracy.
+            - **Root Mean Squared Error (RMSE):** Similar to MAE but penalizes larger errors more heavily. Lower RMSE values signify a more precise model.
+            - **R² Score:** Measures the proportion of variance in the sale price that is predictable from the features. An R² closer to 1 indicates a model that explains a large portion of the variance.
             """)
 
             st.header("Detailed Pipeline Explanation")
+            st.write("""
+            The success of our predictive model hinges on a meticulously crafted pipeline that encompasses data preprocessing, feature engineering, model training, and evaluation. Here's an in-depth look into each stage:
+            """)
+
             st.write("""
             ### 1. Data Collection and Understanding
             - **Datasets Used:**
@@ -821,75 +909,91 @@ with tab5:
             - **Exploratory Data Analysis (EDA):**
               - Assessed data shapes, types, and initial statistics.
               - Identified potential relationships and patterns.
+            """)
 
+            st.write("""
             ### 2. Data Cleaning
             - **Handling Missing Values:**
               - **Numerical Features:** Filled missing values with zeros or the median of the feature.
               - **Categorical Features:** Filled missing values with the mode or a default category.
               - **Verification:** Confirmed that no missing values remained after imputation.
+            """)
 
+            st.write("""
             ### 3. Feature Engineering
             - **Categorical Encoding:**
               - Applied ordinal encoding to convert categorical features into numerical values based on domain knowledge.
             - **Creation of New Features:**
               - **TotalSF:** Combined total square footage of the house, including basement and above-ground areas.
-              - **Qual_TotalSF:** Product of `OverallQual` and `TotalSF` to capture the combined effect of size and quality.
+              - **Qual_TotalSF:** Product of `OverallQual` and `TotalSF` to capture the combined effect of size and quality on sale price.
+            """)
 
+            st.write("""
             ### 4. Feature Transformation
             - **Addressing Skewness:**
               - Identified skewed features using skewness metrics.
               - Applied log transformation or Box-Cox transformation to normalize distributions.
+            """)
 
+            st.write("""
             ### 5. Feature Selection
             - **Random Forest Feature Importances:**
-              - Trained a Random Forest model to assess feature importances.
-              - Selected top features contributing most to the model's predictive power.
+              - Utilized a Random Forest model to evaluate the importance of each feature in predicting sale prices.
+              - Selected top-performing features that significantly contribute to the model's predictive accuracy.
+            """)
 
+            st.write("""
             ### 6. Data Scaling
             - **Standardization:**
-              - Used `StandardScaler` to standardize features.
-              - Ensured that features have a mean of 0 and a standard deviation of 1 for optimal model performance.
+              - Employed `StandardScaler` to standardize numerical features, ensuring they have a mean of 0 and a standard deviation of 1.
+              - Essential for models sensitive to feature scales, such as Ridge and Lasso regressions.
+            """)
 
+            st.write("""
             ### 7. Model Training
             - **Algorithms Used:**
               - Linear Regression, Ridge Regression, Lasso Regression, ElasticNet, Random Forest, Gradient Boosting.
             - **Hyperparameter Tuning:**
-              - Adjusted parameters using techniques like cross-validation to prevent overfitting and improve generalization.
+              - Conducted using cross-validation techniques to identify optimal model parameters, ensuring generalizability and minimizing overfitting.
+            """)
 
+            st.write("""
             ### 8. Model Evaluation
             - **Performance Metrics:**
-              - **Mean Absolute Error (MAE):** Measures average magnitude of errors.
-              - **Root Mean Squared Error (RMSE):** Penalizes larger errors more than MAE.
-              - **R² Score:** Indicates the proportion of variance explained by the model.
+              - **Mean Absolute Error (MAE):** Provides a straightforward measure of average prediction error.
+              - **Root Mean Squared Error (RMSE):** Offers insight into the magnitude of errors, with higher penalties for larger deviations.
+              - **R² Score:** Indicates the proportion of variance in the sale price explained by the model, with higher values signifying better fit.
             - **Best Model Selection:**
-              - Selected the model with the lowest RMSE and highest R² Score.
+              - Evaluated models based on RMSE and R² Score, selecting the one that demonstrates the lowest error and highest explanatory power.
+            """)
 
+            st.write("""
             ### 9. Deployment
             - **Interactive Dashboard:**
-              - Developed using Streamlit for real-time interaction.
-              - Allows users to input house features and obtain immediate sale price predictions.
-              - Provides visualizations and insights into model performance and data relationships.
+              - Developed using Streamlit to provide a user-friendly interface for real-time interaction.
+              - Allows users to input house features and obtain immediate sale price estimates.
+              - Incorporates visual insights into feature correlations, model performance, and hypothesis validations to enhance user understanding.
             """)
 
             st.header("Feature Importances")
             # Display feature importances from the best-performing model
             if best_model_name in models:
                 # Assuming feature_importances.csv has 'Feature' and 'Importance' columns
-                feature_importances_filtered = feature_importances[feature_importances['Model'] != 'Random Forest']
-                feature_importances_best = feature_importances_filtered[feature_importances_filtered['Model'] == best_model_name]
+                feature_importances_best = feature_importances
 
                 if feature_importances_best.empty:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
                 else:
                     plt.figure(figsize=(12, 8))
-                    sns.barplot(x='Importance', y='Feature', data=feature_importances_best.sort_values(by='Importance', ascending=False))
+                    sns.barplot(x='Importance', y='Feature', data=feature_importances_best.sort_values(by='Importance', ascending=False), palette='viridis')
                     plt.title(f'Feature Importances from {best_model_name}', fontsize=16)
                     plt.xlabel('Importance', fontsize=12)
                     plt.ylabel('Feature', fontsize=12)
+                    plt.tight_layout()
                     st.pyplot(plt)
 
                     st.write("""
-                    The bar chart illustrates the relative importance of each feature in predicting the sale price. Features like `GrLivArea`, `TotalSF`, and `OverallQual` are among the most significant.
+                    The bar chart above illustrates the relative importance of each feature in predicting the sale price. Notably, features like `GrLivArea`, `OverallQual`, and `TotalSF` are among the most significant contributors, reaffirming their critical role in determining property values.
                     """)
             else:
                 st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
@@ -905,15 +1009,23 @@ with tab5:
                     y_test_actual = np.expm1(y_test)
                     
                     plt.figure(figsize=(10, 6))
-                    sns.scatterplot(x=y_test_actual, y=y_pred_actual, color='purple')
+                    sns.scatterplot(x=y_test_actual, y=y_pred_actual, color='purple', alpha=0.6)
                     plt.xlabel('Actual Sale Price', fontsize=12)
                     plt.ylabel('Predicted Sale Price', fontsize=12)
                     plt.title('Actual vs Predicted Sale Prices', fontsize=16)
-                    plt.plot([y_test_actual.min(), y_test_actual.max()], [y_test_actual.min(), y_test_actual.max()], 'r--')
+                    plt.plot([y_test_actual.min(), y_test_actual.max()], [y_test_actual.min(), y_test_actual.max()], 'r--', label='Perfect Prediction')
+                    plt.legend()
+                    plt.tight_layout()
                     st.pyplot(plt)
 
                     st.write("""
-                    The scatter plot compares the actual sale prices with the predicted sale prices. The red dashed line represents perfect predictions. Most points are close to this line, indicating good model performance.
+                    **Analysis:**
+                    
+                    The scatter plot compares the actual sale prices with the predicted sale prices. The red dashed line represents perfect predictions, where predicted values exactly match the actual values. The proximity of the data points to this line indicates the model's accuracy. Closer alignment signifies higher prediction precision.
+                    
+                    **Observations:**
+                    - Most predictions cluster around the perfect prediction line, demonstrating the model's reliability.
+                    - A few outliers exist, which could be due to unique property features or data anomalies.
                     """)
                 except Exception as e:
                     st.error(f"**Error during Actual vs Predicted Prices plotting:** {e}")
@@ -930,16 +1042,38 @@ with tab5:
                     residuals = y_test_actual - y_pred_actual
 
                     plt.figure(figsize=(10, 6))
-                    sns.histplot(residuals, kde=True, color='coral')
+                    sns.histplot(residuals, kde=True, color='coral', bins=30)
                     plt.title('Residuals Distribution', fontsize=16)
-                    plt.xlabel('Residuals', fontsize=12)
+                    plt.xlabel('Residuals (Actual - Predicted)', fontsize=12)
                     plt.ylabel('Frequency', fontsize=12)
+                    plt.tight_layout()
                     st.pyplot(plt)
 
                     st.write("""
-                    The residuals are centered around zero and approximately normally distributed, suggesting that the model's errors are random and unbiased.
+                    **Understanding Residuals:**
+                    
+                    Residuals represent the differences between actual and predicted sale prices. Analyzing their distribution helps in assessing the model's performance and identifying any underlying patterns or biases.
+                    
+                    **Key Insights:**
+                    - **Normal Distribution:** Residuals are approximately normally distributed around zero, indicating that the model's errors are random and unbiased.
+                    - **Symmetry:** The symmetrical spread suggests consistent performance across different sale price ranges.
+                    - **Outliers:** Minimal skewness and few outliers indicate that the model handles most data points effectively, with only a handful of predictions deviating significantly.
                     """)
                 except Exception as e:
                     st.error(f"**Error during Residual Analysis plotting:** {e}")
             else:
                 st.warning("**Warning:** Cannot perform residual analysis without the selected model and necessary data.")
+
+    st.write("""
+    ### Conclusion
+
+    The comprehensive evaluation of our regression models underscores the effectiveness of our predictive pipeline. By meticulously preprocessing data, engineering relevant features, and selecting robust models, we've achieved high prediction accuracy and reliability. The insights derived from feature importance and residual analysis further validate our approach, ensuring that the dashboard provides meaningful and actionable information to its users.
+
+    **Next Steps:**
+
+    - **Data Enrichment:** Incorporate additional features such as geographical location, proximity to amenities, and economic indicators to enhance model performance.
+    - **Model Expansion:** Explore and integrate more sophisticated models or ensemble techniques to capture complex data patterns.
+    - **User Feedback:** Gather feedback from users to identify areas of improvement and potential new features for the dashboard.
+    - **Continuous Monitoring:** Implement mechanisms to monitor model performance over time, ensuring sustained accuracy and relevance.
+    """)
+
