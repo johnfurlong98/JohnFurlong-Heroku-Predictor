@@ -616,17 +616,22 @@ with tab3:
     else:
         try:
             inherited_scaled = scaler.transform(inherited_processed[selected_features])
-            # Determine best model based on evaluation
+            # Determine best model based on evaluation, excluding 'XGBoost'
             if model_evaluation.empty:
                 st.error("**Error:** Model evaluation results are empty.")
                 st.stop()
             else:
-                if 'RMSE' in model_evaluation.columns and 'Model' in model_evaluation.columns:
-                    best_model_row = model_evaluation.loc[model_evaluation['RMSE'].idxmin()]
-                    best_model_name = best_model_row['Model']
-                else:
+                # Exclude 'XGBoost' if it's still present
+                available_evaluations = model_evaluation[model_evaluation['Model'] != 'XGBoost']
+                if available_evaluations.empty:
+                    st.error("**Error:** No models available after excluding 'XGBoost'.")
+                    st.stop()
+                if 'RMSE' not in available_evaluations.columns or 'Model' not in available_evaluations.columns:
                     st.error("**Error:** 'RMSE' or 'Model' columns not found in the evaluation results.")
                     st.stop()
+
+                best_model_row = available_evaluations.loc[available_evaluations['RMSE'].idxmin()]
+                best_model_name = best_model_row['Model']
 
             if best_model_name not in models:
                 st.error(f"**Error:** Best model '{best_model_name}' not found among loaded models.")
@@ -784,144 +789,157 @@ with tab5:
     st.title("Model Performance")
     st.header("Performance Metrics")
     results_df = model_evaluation
+
     if results_df.empty:
         st.warning("**Warning:** Model evaluation results are empty.")
     else:
-        st.dataframe(results_df.style.format({'MAE': '{:,.2f}', 'RMSE': '{:,.2f}', 'R² Score': '{:.4f}'}))
-
-        # Determine best model based on RMSE
-        if 'RMSE' in results_df.columns and 'Model' in results_df.columns:
-            best_model_row = results_df.loc[results_df['RMSE'].idxmin()]
-            best_model_name = best_model_row['Model']
-            st.write(f"Best performing model is **{best_model_name}** based on RMSE.")
+        # Exclude 'XGBoost' from evaluation results if present
+        results_df_filtered = results_df[results_df['Model'] != 'XGBoost']
+        if results_df_filtered.empty:
+            st.error("**Error:** No models available after excluding 'XGBoost'.")
         else:
-            st.warning("**Warning:** 'RMSE' or 'Model' columns not found in the evaluation results.")
+            st.dataframe(results_df_filtered.style.format({'MAE': '{:,.2f}', 'RMSE': '{:,.2f}', 'R² Score': '{:.4f}'}))
 
-        st.write("""
-        The table above presents the performance metrics of various regression models. The best-performing model outperforms others with the lowest MAE and RMSE, and the highest R² Score.
-        """)
-
-        st.header("Detailed Pipeline Explanation")
-        st.write("""
-        ### 1. Data Collection and Understanding
-        - **Datasets Used:**
-          - **Historical House Sale Data:** Contains features and sale prices of houses.
-          - **Inherited Houses Data:** Contains features of houses for which sale prices need to be predicted.
-        - **Exploratory Data Analysis (EDA):**
-          - Assessed data shapes, types, and initial statistics.
-          - Identified potential relationships and patterns.
-
-        ### 2. Data Cleaning
-        - **Handling Missing Values:**
-          - **Numerical Features:** Filled missing values with zeros or the median of the feature.
-          - **Categorical Features:** Filled missing values with the mode or a default category.
-          - **Verification:** Confirmed that no missing values remained after imputation.
-
-        ### 3. Feature Engineering
-        - **Categorical Encoding:**
-          - Applied ordinal encoding to convert categorical features into numerical values based on domain knowledge.
-        - **Creation of New Features:**
-          - **TotalSF:** Combined total square footage of the house, including basement and above-ground areas.
-          - **Qual_TotalSF:** Product of `OverallQual` and `TotalSF` to capture the combined effect of size and quality.
-
-        ### 4. Feature Transformation
-        - **Addressing Skewness:**
-          - Identified skewed features using skewness metrics.
-          - Applied log transformation or Box-Cox transformation to normalize distributions.
-
-        ### 5. Feature Selection
-        - **Random Forest Feature Importances:**
-          - Trained a Random Forest model to assess feature importances.
-          - Selected top features contributing most to the model's predictive power.
-
-        ### 6. Data Scaling
-        - **Standardization:**
-          - Used `StandardScaler` to standardize features.
-          - Ensured that features have a mean of 0 and a standard deviation of 1 for optimal model performance.
-
-        ### 7. Model Training
-        - **Algorithms Used:**
-          - Linear Regression, Ridge Regression, Lasso Regression, ElasticNet, Random Forest, Gradient Boosting.
-        - **Hyperparameter Tuning:**
-          - Adjusted parameters using techniques like cross-validation to prevent overfitting and improve generalization.
-
-        ### 8. Model Evaluation
-        - **Performance Metrics:**
-          - **Mean Absolute Error (MAE):** Measures average magnitude of errors.
-          - **Root Mean Squared Error (RMSE):** Penalizes larger errors more than MAE.
-          - **R² Score:** Indicates the proportion of variance explained by the model.
-        - **Best Model Selection:**
-          - Selected the model with the lowest RMSE and highest R² Score.
-
-        ### 9. Deployment
-        - **Interactive Dashboard:**
-          - Developed using Streamlit for real-time interaction.
-          - Allows users to input house features and obtain immediate sale price predictions.
-          - Provides visualizations and insights into model performance and data relationships.
-        """)
-
-        st.header("Feature Importances")
-        # Display feature importances from the best-performing model
-        if best_model_name in models:
-            plt.figure(figsize=(12, 8))
-            sns.barplot(x='Importance', y='Feature', data=feature_importances.sort_values(by='Importance', ascending=False))
-            plt.title(f'Feature Importances from {best_model_name}', fontsize=16)
-            plt.xlabel('Importance', fontsize=12)
-            plt.ylabel('Feature', fontsize=12)
-            st.pyplot(plt)
+            # Determine best model based on RMSE
+            if 'RMSE' in results_df_filtered.columns and 'Model' in results_df_filtered.columns:
+                best_model_row = results_df_filtered.loc[results_df_filtered['RMSE'].idxmin()]
+                best_model_name = best_model_row['Model']
+                st.write(f"Best performing model is **{best_model_name}** based on RMSE.")
+            else:
+                st.warning("**Warning:** 'RMSE' or 'Model' columns not found in the evaluation results.")
 
             st.write("""
-            The bar chart illustrates the relative importance of each feature in predicting the sale price. Features like `GrLivArea`, `TotalSF`, and `OverallQual` are among the most significant.
+            The table above presents the performance metrics of various regression models. The best-performing model outperforms others with the lowest MAE and RMSE, and the highest R² Score.
             """)
-        else:
-            st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
 
-        st.header("Actual vs Predicted Prices")
-        selected_model = models.get(best_model_name)
-        if selected_model and train_test_data:
-            X_train, X_test, y_train, y_test = train_test_data
-            try:
-                y_pred_log = selected_model.predict(X_test)
-                y_pred_actual = np.expm1(y_pred_log)
-                y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
-                y_test_actual = np.expm1(y_test)
-                
-                plt.figure(figsize=(10, 6))
-                sns.scatterplot(x=y_test_actual, y=y_pred_actual, color='purple')
-                plt.xlabel('Actual Sale Price', fontsize=12)
-                plt.ylabel('Predicted Sale Price', fontsize=12)
-                plt.title('Actual vs Predicted Sale Prices', fontsize=16)
-                plt.plot([y_test_actual.min(), y_test_actual.max()], [y_test_actual.min(), y_test_actual.max()], 'r--')
-                st.pyplot(plt)
+            st.header("Detailed Pipeline Explanation")
+            st.write("""
+            ### 1. Data Collection and Understanding
+            - **Datasets Used:**
+              - **Historical House Sale Data:** Contains features and sale prices of houses.
+              - **Inherited Houses Data:** Contains features of houses for which sale prices need to be predicted.
+            - **Exploratory Data Analysis (EDA):**
+              - Assessed data shapes, types, and initial statistics.
+              - Identified potential relationships and patterns.
 
-                st.write("""
-                The scatter plot compares the actual sale prices with the predicted sale prices. The red dashed line represents perfect predictions. Most points are close to this line, indicating good model performance.
-                """)
-            except Exception as e:
-                st.error(f"**Error during Actual vs Predicted Prices plotting:** {e}")
-        else:
-            st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
+            ### 2. Data Cleaning
+            - **Handling Missing Values:**
+              - **Numerical Features:** Filled missing values with zeros or the median of the feature.
+              - **Categorical Features:** Filled missing values with the mode or a default category.
+              - **Verification:** Confirmed that no missing values remained after imputation.
 
-        st.header("Residual Analysis")
-        if selected_model and train_test_data:
-            try:
-                y_pred_log = selected_model.predict(X_test)
-                y_pred_actual = np.expm1(y_pred_log)
-                y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
-                y_test_actual = np.expm1(y_test)
-                residuals = y_test_actual - y_pred_actual
+            ### 3. Feature Engineering
+            - **Categorical Encoding:**
+              - Applied ordinal encoding to convert categorical features into numerical values based on domain knowledge.
+            - **Creation of New Features:**
+              - **TotalSF:** Combined total square footage of the house, including basement and above-ground areas.
+              - **Qual_TotalSF:** Product of `OverallQual` and `TotalSF` to capture the combined effect of size and quality.
 
-                plt.figure(figsize=(10, 6))
-                sns.histplot(residuals, kde=True, color='coral')
-                plt.title('Residuals Distribution', fontsize=16)
-                plt.xlabel('Residuals', fontsize=12)
-                plt.ylabel('Frequency', fontsize=12)
-                st.pyplot(plt)
+            ### 4. Feature Transformation
+            - **Addressing Skewness:**
+              - Identified skewed features using skewness metrics.
+              - Applied log transformation or Box-Cox transformation to normalize distributions.
 
-                st.write("""
-                The residuals are centered around zero and approximately normally distributed, suggesting that the model's errors are random and unbiased.
-                """)
-            except Exception as e:
-                st.error(f"**Error during Residual Analysis plotting:** {e}")
-        else:
-            st.warning("**Warning:** Cannot perform residual analysis without the selected model and necessary data.")
+            ### 5. Feature Selection
+            - **Random Forest Feature Importances:**
+              - Trained a Random Forest model to assess feature importances.
+              - Selected top features contributing most to the model's predictive power.
+
+            ### 6. Data Scaling
+            - **Standardization:**
+              - Used `StandardScaler` to standardize features.
+              - Ensured that features have a mean of 0 and a standard deviation of 1 for optimal model performance.
+
+            ### 7. Model Training
+            - **Algorithms Used:**
+              - Linear Regression, Ridge Regression, Lasso Regression, ElasticNet, Random Forest, Gradient Boosting.
+            - **Hyperparameter Tuning:**
+              - Adjusted parameters using techniques like cross-validation to prevent overfitting and improve generalization.
+
+            ### 8. Model Evaluation
+            - **Performance Metrics:**
+              - **Mean Absolute Error (MAE):** Measures average magnitude of errors.
+              - **Root Mean Squared Error (RMSE):** Penalizes larger errors more than MAE.
+              - **R² Score:** Indicates the proportion of variance explained by the model.
+            - **Best Model Selection:**
+              - Selected the model with the lowest RMSE and highest R² Score.
+
+            ### 9. Deployment
+            - **Interactive Dashboard:**
+              - Developed using Streamlit for real-time interaction.
+              - Allows users to input house features and obtain immediate sale price predictions.
+              - Provides visualizations and insights into model performance and data relationships.
+            """)
+
+            st.header("Feature Importances")
+            # Display feature importances from the best-performing model
+            if best_model_name in models:
+                # Assuming feature_importances.csv has 'Feature' and 'Importance' columns
+                feature_importances_filtered = feature_importances[feature_importances['Model'] != 'XGBoost']
+                feature_importances_best = feature_importances_filtered[feature_importances_filtered['Model'] == best_model_name]
+
+                if feature_importances_best.empty:
+                    st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
+                else:
+                    plt.figure(figsize=(12, 8))
+                    sns.barplot(x='Importance', y='Feature', data=feature_importances_best.sort_values(by='Importance', ascending=False))
+                    plt.title(f'Feature Importances from {best_model_name}', fontsize=16)
+                    plt.xlabel('Importance', fontsize=12)
+                    plt.ylabel('Feature', fontsize=12)
+                    st.pyplot(plt)
+
+                    st.write("""
+                    The bar chart illustrates the relative importance of each feature in predicting the sale price. Features like `GrLivArea`, `TotalSF`, and `OverallQual` are among the most significant.
+                    """)
+            else:
+                st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
+
+            st.header("Actual vs Predicted Prices")
+            selected_model = models.get(best_model_name)
+            if selected_model and train_test_data:
+                X_train, X_test, y_train, y_test = train_test_data
+                try:
+                    y_pred_log = selected_model.predict(X_test)
+                    y_pred_actual = np.expm1(y_pred_log)
+                    y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
+                    y_test_actual = np.expm1(y_test)
+                    
+                    plt.figure(figsize=(10, 6))
+                    sns.scatterplot(x=y_test_actual, y=y_pred_actual, color='purple')
+                    plt.xlabel('Actual Sale Price', fontsize=12)
+                    plt.ylabel('Predicted Sale Price', fontsize=12)
+                    plt.title('Actual vs Predicted Sale Prices', fontsize=16)
+                    plt.plot([y_test_actual.min(), y_test_actual.max()], [y_test_actual.min(), y_test_actual.max()], 'r--')
+                    st.pyplot(plt)
+
+                    st.write("""
+                    The scatter plot compares the actual sale prices with the predicted sale prices. The red dashed line represents perfect predictions. Most points are close to this line, indicating good model performance.
+                    """)
+                except Exception as e:
+                    st.error(f"**Error during Actual vs Predicted Prices plotting:** {e}")
+            else:
+                st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
+
+            st.header("Residual Analysis")
+            if selected_model and train_test_data:
+                try:
+                    y_pred_log = selected_model.predict(X_test)
+                    y_pred_actual = np.expm1(y_pred_log)
+                    y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
+                    y_test_actual = np.expm1(y_test)
+                    residuals = y_test_actual - y_pred_actual
+
+                    plt.figure(figsize=(10, 6))
+                    sns.histplot(residuals, kde=True, color='coral')
+                    plt.title('Residuals Distribution', fontsize=16)
+                    plt.xlabel('Residuals', fontsize=12)
+                    plt.ylabel('Frequency', fontsize=12)
+                    st.pyplot(plt)
+
+                    st.write("""
+                    The residuals are centered around zero and approximately normally distributed, suggesting that the model's errors are random and unbiased.
+                    """)
+                except Exception as e:
+                    st.error(f"**Error during Residual Analysis plotting:** {e}")
+            else:
+                st.warning("**Warning:** Cannot perform residual analysis without the selected model and necessary data.")
