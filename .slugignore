@@ -1,24 +1,29 @@
-# Exclude virtual environment
+# Ignore Git directories
+.git
+.gitignore
+
+# Ignore virtual environments
+venv/
+.env/
 .venv/
 
-# Exclude Git metadata
-.git/
+# Ignore data files not needed at runtime
+dashboard/notebook/raw_data/
+dashboard/notebook/finalnb.ipynb
+dashboard/notebook/data/models/selected_features.pkl
+dashboard/notebook/data/models/skewed_features.pkl
+dashboard/notebook/data/models/lam_dict.pkl
 
-# Exclude unnecessary build directories and files
-dist/
-build/
-*.egg-info/
+# Ignore test files
+tests/
+*.test.js
+*.spec.js
 
-# Exclude large data files if any (adjust as needed)
-*.pack
+# Ignore documentation
+docs/
+README.md
 
-# Exclude logs
+# Ignore any other non-essential files
 *.log
-
-# Exclude OS-specific files
-.DS_Store
-Thumbs.db
-
-# Exclude editor-specific files
-.vscode/
-.idea/
+*.tmp
+*.bak
