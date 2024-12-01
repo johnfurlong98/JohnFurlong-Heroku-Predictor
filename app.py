@@ -7,7 +7,7 @@ import joblib
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.stats import boxcox
+from scipy.stats import boxcox, probplot
 from scipy.special import inv_boxcox  # Added for inverse Box-Cox transformation
 import pickle
 from pathlib import Path
@@ -1241,14 +1241,12 @@ with tab5:
                     The pairplot above visualizes the relationships between selected features and the sale price, excluding the top feature `OverallQual`. This provides a clearer view of how other significant features interact with the sale price.
 
                     **Detailed Insights:**
-                    
-                    - **[Feature 1] vs SalePrice:** Description of the relationship.
-                    - **[Feature 2] vs SalePrice:** Description of the relationship.
-                    - **[Feature 3] vs SalePrice:** Description of the relationship.
-                    - **[Feature 4] vs SalePrice:** Description of the relationship.
-                    - **[Feature 5] vs SalePrice:** Description of the relationship.
 
-                    *Replace [Feature X] with actual feature names and provide meaningful descriptions based on your data analysis.*
+                    - **Total Basement Area (`TotalBsmtSF`) vs SalePrice:** Indicates that larger basement areas contribute significantly to higher sale prices.
+                    - **Garage Area (`GarageArea`) vs SalePrice:** Shows a positive relationship where bigger garages enhance the property's value.
+                    - **Lot Frontage (`LotFrontage`) vs SalePrice:** Demonstrates that properties with greater lot frontage tend to have higher sale prices.
+                    - **Bedroom Above Grade (`BedroomAbvGr`) vs SalePrice:** Suggests that more bedrooms above grade increase the property's market value.
+                    - **Masonry Veneer Area (`MasVnrArea`) vs SalePrice:** Reflects that properties with larger masonry veneer areas are valued higher.
                     """)
 
                 st.header("Residual Analysis")
@@ -1288,22 +1286,21 @@ with tab5:
                         The scatter plot above displays the residuals (actual sale price minus predicted sale price) against the predicted sale prices. This visualization helps in assessing the model's performance across different price ranges.
 
                         **Key Insights:**
+
                         - **Homoscedasticity:** Residuals are randomly dispersed around the horizontal axis, suggesting that the model's variance is consistent across all levels of predicted values.
                         - **No Patterns:** The absence of discernible patterns indicates that the model captures the underlying relationship well without systematic errors.
                         - **Outliers:** A few residuals deviate significantly from the horizontal axis, highlighting instances where the model's predictions are less accurate.
                         """)
 
-                        # Optional: Q-Q Plot for Residuals
+                        # Q-Q Plot for Residuals
                         st.write("### Q-Q Plot of Residuals")
                         plt.figure(figsize=(10, 6))
-                        sns.histplot(residuals, kde=True, color='coral', bins=30)
-                        plt.title('Residuals Distribution', fontsize=16)
-                        plt.xlabel('Residuals (USD)', fontsize=12)
-                        plt.ylabel('Frequency', fontsize=12)
+                        probplot(residuals, dist="norm", plot=plt)
+                        plt.title('Q-Q Plot of Residuals', fontsize=16)
                         plt.tight_layout()
                         # Format x-axis with dollar signs
                         plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
-                        plt.xticks(rotation=45)
+                        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
                         st.pyplot(plt)
 
                         st.write("""
@@ -1312,6 +1309,7 @@ with tab5:
                         Residuals represent the differences between actual and predicted sale prices. Analyzing their distribution helps in assessing the model's performance and identifying any underlying patterns or biases.
 
                         **Key Insights:**
+
                         - **Normal Distribution:** Residuals are approximately normally distributed around zero, indicating that the model's errors are random and unbiased.
                         - **Symmetry:** The symmetrical spread suggests consistent performance across different sale price ranges.
                         - **Outliers:** Minimal skewness and few outliers indicate that the model handles most data points effectively, with only a handful of predictions deviating significantly.
