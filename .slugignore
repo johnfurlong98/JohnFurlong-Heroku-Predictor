@@ -10,12 +10,7 @@ build/
 *.egg-info/
 
 # Exclude large data files if any (adjust as needed)
-*.csv
-*.pkl
-*.joblib
-*.h5
-*.db
-*.sqlite3
+*.pack
 
 # Exclude logs
 *.log
