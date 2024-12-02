@@ -928,6 +928,22 @@ with tab4:
     In this section, we explore the foundational hypotheses that guided our analysis and modeling efforts. Each hypothesis is validated using statistical and machine learning techniques, providing a deeper understanding of the factors influencing house prices.
     """)
 
+    # Create a separate DataFrame for plotting with original values
+    data_for_plotting = data_original.copy()
+
+    # Add necessary features for plotting
+    data_for_plotting['LotArea'] = data['LotArea']
+    data_for_plotting['BedroomAbvGr'] = data['BedroomAbvGr']
+    data_for_plotting['GrLivArea'] = data['GrLivArea']
+    data_for_plotting['TotalBsmtSF'] = data['TotalBsmtSF']
+    data_for_plotting['OverallQual'] = data['OverallQual']
+    data_for_plotting['YearRemodAdd'] = data['YearRemodAdd']
+    data_for_plotting['GarageArea'] = data['GarageArea']
+    data_for_plotting['GarageFinish'] = data['GarageFinish']
+    data_for_plotting['YearBuilt'] = data['YearBuilt']
+    data_for_plotting['KitchenQual'] = data['KitchenQual']
+    data_for_plotting['TotalSF'] = data['TotalSF']
+
     # Primary Hypotheses
     st.subheader("### Primary Hypotheses")
     st.write("""
@@ -961,10 +977,10 @@ with tab4:
     - **Validation:** The `LotArea` and `LotFrontage` features have significant positive correlations with the sale price, supporting this hypothesis.
     """)
     st.write("""
-    **Hypothesis 6:** *Kitchen quality is a strong predictor of a house's sale price.*
-    
-    - **Rationale:** Kitchens are central to modern living, and high-quality kitchens with modern appliances and finishes are highly sought after.
-    - **Validation:** The `KitchenQual` feature demonstrates a positive correlation with the sale price, confirming its importance.
+    **Hypothesis 6:** *Houses with larger above-grade living areas tend to have larger basements.*
+
+    - **Rationale:** Larger homes above ground are likely to have larger basements, as the foundation size increases with the house size.
+    - **Validation:** Analyze the correlation between `GrLivArea` and `TotalBsmtSF`.
     """)
     st.write("""
     **Hypothesis 7:** *The number of bedrooms above grade influences the sale price.*
@@ -1070,55 +1086,41 @@ with tab4:
     # LotArea vs SalePrice_original
     st.write("#### SalePrice vs LotArea")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='LotArea', y='SalePrice', data=data_for_corr, alpha=0.6)
+    sns.scatterplot(x='LotArea', y='SalePrice', data=data_for_plotting, alpha=0.6)
     plt.title('SalePrice vs Lot Area', fontsize=16)
     plt.xlabel('Lot Area (sq ft)', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
-    plt.xlim(0, data_for_corr['LotArea'].quantile(0.95))  # Exclude extreme outliers
+    # Exclude extreme outliers to focus on the majority of data
+    plt.xlim(0, data_for_plotting['LotArea'].quantile(0.95))
+    plt.ylim(0, data_for_plotting['SalePrice'].quantile(0.95))
+    # Format y-axis with dollar signs
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
 
     st.write("""
     **Conclusion:**
 
-    The positive relationship between lot area and sale price is evident. Larger lots generally contribute to higher property values, supporting our fifth hypothesis.
+    The scatter plot now accurately displays the relationship between Lot Area and Sale Price. There is a positive correlation, indicating that larger lots generally contribute to higher property values. This supports our fifth hypothesis regarding the importance of lot size in determining house prices.
     """)
 
-    # KitchenQual vs SalePrice_original
-    st.write("#### SalePrice vs KitchenQual")
-
-    # Map numeric 'KitchenQual' back to labels for plotting
-    ordinal_mappings_reverse = {1: 'Po', 2: 'Fa', 3: 'TA', 4: 'Gd', 5: 'Ex'}
-    data_for_corr['KitchenQual'] = data_for_corr['KitchenQual'].map(ordinal_mappings_reverse)
-
-    # Ensure 'KitchenQual' is a categorical variable with the correct order
-    data_for_corr['KitchenQual'] = pd.Categorical(
-        data_for_corr['KitchenQual'],
-        categories=['Po', 'Fa', 'TA', 'Gd', 'Ex'],
-        ordered=True
-    )
-
+    # GrLivArea vs TotalBsmtSF
+    st.write("#### TotalBsmtSF vs GrLivArea")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(
-        x='KitchenQual',
-        y='SalePrice',
-        data=data_for_corr
-    )
-    plt.title('SalePrice vs Kitchen Quality', fontsize=16)
-    plt.xlabel('Kitchen Quality', fontsize=12)
-    plt.ylabel('Sale Price (USD)', fontsize=12)
+    sns.regplot(x='GrLivArea', y='TotalBsmtSF', data=data_for_plotting, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
+    plt.title('Total Basement Area vs Above Grade Living Area', fontsize=16)
+    plt.xlabel('Above Grade Living Area (sq ft)', fontsize=12)
+    plt.ylabel('Total Basement Area (sq ft)', fontsize=12)
     plt.tight_layout()
-    # Format y-axis with dollar signs
-    plt.gca().yaxis.set_major_formatter(
-        plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x))
-    )
+    # Exclude extreme outliers
+    plt.xlim(0, data_for_plotting['GrLivArea'].quantile(0.95))
+    plt.ylim(0, data_for_plotting['TotalBsmtSF'].quantile(0.95))
     st.pyplot(plt)
 
     st.write("""
     **Conclusion:**
 
-    The boxplot clearly shows that houses with higher kitchen quality ratings have significantly higher sale prices. This strong positive association validates our sixth hypothesis.
+    The scatter plot with regression line demonstrates a strong positive correlation between the above-grade living area and the total basement area. This indicates that larger homes tend to have larger basements, validating our sixth hypothesis.
     """)
 
     # BedroomAbvGr vs SalePrice_original
