@@ -10,20 +10,25 @@ from scipy.stats import boxcox
 from scipy.special import inv_boxcox  # Added for inverse Box-Cox transformation
 import pickle
 from pathlib import Path
+
 # --------------------------- #
 #       Configuration          #
 # --------------------------- #
+
 # Get the directory where the script is located
 BASE_DIR = Path(__file__).resolve().parent
+
 # Set up page configuration with custom theme
 st.set_page_config(
     page_title="House Price Prediction Dashboard",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
 # --------------------------- #
 #       Helper Functions       #
 # --------------------------- #
+
 def check_file_exists(file_path, description):
     """
     Checks if a given file exists. If not, displays an error and stops the app.
@@ -31,6 +36,7 @@ def check_file_exists(file_path, description):
     if not file_path.exists():
         st.error(f"**Error:** The {description} file was not found at `{file_path}`.")
         st.stop()
+
 @st.cache_data(show_spinner=False)
 def load_data():
     """
@@ -56,6 +62,7 @@ def load_data():
         st.stop()
     
     return data, inherited_houses
+
 @st.cache_resource(show_spinner=False)
 def load_models():
     """
@@ -153,6 +160,7 @@ def load_models():
         st.stop()
     
     return models, scaler, selected_features, skewed_features, lam_dict, feature_importances, model_evaluation, train_test_data
+
 @st.cache_data(show_spinner=False)
 def feature_engineering(df):
     """
@@ -162,6 +170,7 @@ def feature_engineering(df):
     df['TotalSF'] = df.get('TotalBsmtSF', 0) + df.get('1stFlrSF', 0) + df.get('2ndFlrSF', 0)
     df['Qual_TotalSF'] = df.get('OverallQual', 0) * df.get('TotalSF', 0)
     return df
+
 @st.cache_data(show_spinner=False)
 def preprocess_data(df, data_reference=None):
     """
@@ -269,21 +278,28 @@ def preprocess_data(df, data_reference=None):
                     df_processed[feat] = np.log1p(df_processed[feat])
     
     return df_processed
+
 # --------------------------- #
 #       Load Data & Models     #
 # --------------------------- #
+
 # Load data
 data, inherited_houses = load_data()
+
 # Create a copy of the original SalePrice before preprocessing for visualization
 data_original = data[['SalePrice']].copy()
+
 # Load models and related data
 (models, scaler, selected_features, skewed_features, lam_dict, 
  feature_importances, model_evaluation, train_test_data) = load_models()
+
 # Preprocess the main data
 data = preprocess_data(data, data_reference=data)
+
 # --------------------------- #
 #       Feature Metadata       #
 # --------------------------- #
+
 # Metadata for features (from the provided metadata)
 feature_metadata = {
     '1stFlrSF': 'First Floor square feet',
@@ -313,9 +329,11 @@ feature_metadata = {
     'Qual_TotalSF': 'Product of OverallQual and TotalSF',
     'OpenPorchSF': 'Open porch area',
 }
+
 # --------------------------- #
 #   Feature Input Definitions #
 # --------------------------- #
+
 # Define feature input details for the user input form
 feature_input_details = {
     'OverallQual': {
@@ -539,9 +557,11 @@ feature_input_details = {
         'help_text': feature_metadata['MasVnrArea']
     },
 }
+
 # --------------------------- #
 #       Custom Styling         #
 # --------------------------- #
+
 # Apply custom CSS for enhanced UI (optional)
 st.markdown(
     """
@@ -563,15 +583,19 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 # --------------------------- #
 #          Main App            #
 # --------------------------- #
+
 # Create tabs for navigation
 tabs = ["Project Summary", "Feature Correlations", "House Price Predictions", "Project Hypotheses", "Model Performance"]
 tab1, tab2, tab3, tab4, tab5 = st.tabs(tabs)
+
 # --------------------------- #
 #      Project Summary Tab     #
 # --------------------------- #
+
 with tab1:
     st.title("House Price Prediction Dashboard")
     st.write("""
@@ -614,17 +638,21 @@ with tab1:
 
     ---
     """)
+
 # --------------------------- #
 #    Feature Correlations Tab  #
 # --------------------------- #
+
 with tab2:
     st.title("Feature Correlations")
     st.write("""
     ## Understanding Feature Relationships
     Understanding how different features correlate with the sale price is crucial for building an effective predictive model. This section visualizes the relationships between key property attributes and the sale price.
     """)
+
     # Prepare data for correlation using original SalePrice
     data_for_corr = pd.concat([data.drop('SalePrice', axis=1), data_original], axis=1)
+
     # Compute correlation matrix
     corr_matrix = data_for_corr.corr()
     if 'SalePrice' not in corr_matrix.columns:
@@ -654,6 +682,7 @@ with tab2:
             - **Garage Area (`GarageArea`):** Larger garages contribute to higher house values.
             - **Lot Area (`LotArea`):** Bigger lots generally correlate with increased sale prices.
             """)
+
             # Additional visualization: Pairplot with top features
             st.write("### Pairplot of Top Correlated Features")
             # Select top 5 features excluding 'SalePrice'
@@ -675,6 +704,7 @@ with tab2:
                 st.write("""
                 The pairplot above visualizes pairwise relationships between the top correlated features and the sale price. Sampling the data ensures quicker rendering while maintaining the overall trend insights.
                 """)
+
         # New section: Feature Correlations Excluding OverallQual
         st.write("### Feature Correlations Excluding OverallQual")
         # Exclude 'OverallQual' from the data
@@ -706,6 +736,7 @@ with tab2:
             - **GarageArea:** Still positively correlated with sale price.
             - **Qual_TotalSF:** The combined effect of quality and total square footage is significant even without considering `OverallQual` directly.
             """)
+
             # Interesting Relationships
             st.write("### Interesting Relationships")
             st.write("""
@@ -727,16 +758,20 @@ with tab2:
 
             These findings emphasize the importance of data-driven insights over assumptions. They suggest that while certain features may intuitively seem valuable, their actual impact on sale price can differ based on market dynamics and buyer preferences.
             """)
+
     st.write("""
     ### Interpreting Correlations
     - **Feature Selection:** Highly correlated features are prioritized for model training to enhance predictive performance.
     - **Multicollinearity Detection:** Identifying correlated features helps in mitigating multicollinearity issues, which can adversely affect certain regression models.
     - **Insight Generation:** Correlation analysis provides actionable insights into what drives house prices, aiding stakeholders in making informed decisions.
+
     **Note:** Correlation does not imply causation. While features may be correlated with the sale price, further analysis is required to establish causal relationships.
     """)
+
 # --------------------------- #
 #  House Price Predictions Tab #
 # --------------------------- #
+
 with tab3:
     st.title("House Price Predictions")
     # Inherited Houses Predictions
@@ -798,6 +833,7 @@ with tab3:
     ## Predict Sale Prices in Real-Time
     Harness the power of our predictive model by inputting specific house attributes to receive instant sale price estimates. This feature is particularly useful for assessing the value of a property based on its characteristics.
     """)
+
     def user_input_features():
         """
         Creates a form for users to input house features and returns the input data as a DataFrame.
@@ -859,6 +895,7 @@ with tab3:
             return input_df
         else:
             return None
+
     user_input = user_input_features()
     if user_input is not None:
         try:
@@ -870,6 +907,7 @@ with tab3:
             st.success(f"The predicted sale price is **${user_pred_actual[0]:,.2f}**.")
         except Exception as e:
             st.error(f"**Error during prediction:** {e}")
+
     st.write("""
     ### How It Works
     1. **Input Features:** Enter the specific attributes of the house you're evaluating.
@@ -878,15 +916,18 @@ with tab3:
     4. **Prediction:** The processed data is fed into the best-performing regression model to generate an estimated sale price.
     5. **Output:** Receive an instant prediction of the house's market value, aiding in informed decision-making.
     """)
+
 # --------------------------- #
 #      Project Hypotheses Tab  #
 # --------------------------- #
+
 with tab4:
     st.title("Project Hypotheses")
     st.write("""
     ## Hypothesis Validation
     In this section, we explore the foundational hypotheses that guided our analysis and modeling efforts. Each hypothesis is validated using statistical and machine learning techniques, providing a deeper understanding of the factors influencing house prices.
     """)
+
     # Primary Hypotheses
     st.subheader("### Primary Hypotheses")
     st.write("""
@@ -931,175 +972,215 @@ with tab4:
     - **Rationale:** More bedrooms can accommodate larger families, increasing the property's appeal to potential buyers.
     - **Validation:** The `BedroomAbvGr` feature shows a positive correlation with the sale price, supporting this hypothesis.
     """)
+
     # Additional Hypotheses on Other Correlations
+    st.subheader("### Additional Hypotheses on Feature Correlations")
     st.write("""
-    **Hypothesis 8:** *Older homes might have higher craftsmanship, impacting overall quality.*
+    **Hypothesis 8:** *Older homes may have higher overall quality due to superior craftsmanship.*
     
-    - **Rationale:** Some older homes may feature architectural designs and craftsmanship that are highly valued.
-    - **Validation:** Analyzing `YearBuilt` against `OverallQual` can reveal if older homes have higher quality ratings.
+    - **Rationale:** Some older homes are built with high-quality materials and craftsmanship that are highly valued.
+    - **Validation:** Analyzing the relationship between `YearBuilt` and `OverallQual` can reveal trends in quality over time.
     """)
     st.write("""
-    **Hypothesis 9:** *Garage size is positively correlated with living area.*
+    **Hypothesis 9:** *Garage size is positively correlated with the living area.*
     
-    - **Rationale:** Larger homes often come with larger garages to accommodate more vehicles or storage.
-    - **Validation:** Investigate the relationship between `GarageArea` and `GrLivArea`.
+    - **Rationale:** Larger homes often come with larger garages, reflecting a consistent scale of property size.
+    - **Validation:** Investigating the correlation between `GarageArea` and `GrLivArea` can confirm this relationship.
     """)
+    st.write("""
+    **Hypothesis 10:** *Properties with higher overall quality tend to have larger total square footage.*
+    
+    - **Rationale:** Higher quality homes might also be larger, offering more space and amenities.
+    - **Validation:** Examining the relationship between `OverallQual` and `TotalSF` can validate this hypothesis.
+    """)
+
     # Visualization for Hypotheses
     st.write("### Visualization of Hypotheses")
+    sns.set(style="whitegrid")
+
     # OverallQual vs SalePrice_original
     st.write("#### SalePrice vs OverallQual")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='OverallQual', y='SalePrice', data=data_for_corr, palette='Set2')  # Using original SalePrice
-    plt.title('SalePrice vs OverallQual', fontsize=16)
+    sns.boxplot(x='OverallQual', y='SalePrice', data=data_for_corr, palette='Set2')
+    plt.title('SalePrice vs Overall Quality', fontsize=16)
     plt.xlabel('Overall Quality', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
-    # Format y-axis with dollar signs
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
-    
+
     The boxplot illustrates a clear trend where houses with higher overall quality ratings command higher sale prices. This strong positive relationship validates our first hypothesis, emphasizing the significant impact of overall quality on property value.
     """)
+
     # TotalSF vs SalePrice_original
     st.write("#### SalePrice vs TotalSF")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='TotalSF', y='SalePrice', data=data_for_corr, hue='OverallQual', palette='coolwarm', alpha=0.6)  # Using original SalePrice
-    plt.title('SalePrice vs TotalSF', fontsize=16)
+    sns.regplot(x='TotalSF', y='SalePrice', data=data_for_corr, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
+    plt.title('SalePrice vs Total Square Footage', fontsize=16)
     plt.xlabel('Total Square Footage', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
-    plt.legend(title='Overall Quality', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    # Format y-axis with dollar signs
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
-    
-    The scatter plot reveals a positive correlation between total square footage and sale price. Larger homes with more square footage tend to have higher sale prices, supporting our second hypothesis that size is a key determinant of property value.
+
+    The scatter plot with regression line reveals a strong positive correlation between total square footage and sale price. Larger homes tend to have higher sale prices, supporting our second hypothesis that size is a key determinant of property value.
     """)
+
     # YearRemodAdd vs SalePrice_original
     st.write("#### SalePrice vs YearRemodeled")
     plt.figure(figsize=(10, 6))
-    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data_for_corr, color='green', ci=None)  # Using original SalePrice
+    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data_for_corr, color='green', ci=None)
     plt.title('SalePrice vs Year Remodeled', fontsize=16)
     plt.xlabel('Year Remodeled', fontsize=12)
     plt.ylabel('Average Sale Price (USD)', fontsize=12)
     plt.tight_layout()
-    # Format y-axis with dollar signs
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
-    
-    The line plot shows an upward trend in sale prices with more recent remodeling years. This indicates that recent renovations and updates contribute positively to the property's market value, thereby validating our third hypothesis.
+
+    The line plot shows an upward trend in sale prices with more recent remodeling years. This indicates that recent renovations contribute positively to the property's market value, validating our third hypothesis.
     """)
+
     # GarageArea vs SalePrice_original
     st.write("#### SalePrice vs GarageArea")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='GarageArea', y='SalePrice', data=data_for_corr, hue='GarageFinish', palette='viridis', alpha=0.6)  # Using original SalePrice
-    plt.title('SalePrice vs GarageArea', fontsize=16)
+    sns.scatterplot(x='GarageArea', y='SalePrice', data=data_for_corr, hue='GarageFinish', palette='viridis', alpha=0.6)
+    plt.title('SalePrice vs Garage Area', fontsize=16)
     plt.xlabel('Garage Area (sq ft)', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.legend(title='Garage Finish', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    # Format y-axis with dollar signs
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
-    
-    The scatter plot indicates that larger garage areas are associated with higher sale prices. Additionally, the quality of the garage finish further enhances the property's value. These observations confirm our fourth hypothesis, highlighting the significant role of garage features in determining house prices.
+
+    The scatter plot indicates that larger garage areas are associated with higher sale prices. Additionally, the quality of the garage finish enhances the property's value, confirming our fourth hypothesis.
     """)
+
     # LotArea vs SalePrice_original
     st.write("#### SalePrice vs LotArea")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='LotArea', y='SalePrice', data=data_for_corr, hue='BedroomAbvGr', palette='magma', alpha=0.6)  # Using original SalePrice
-    plt.title('SalePrice vs LotArea', fontsize=16)
+    sns.scatterplot(x='LotArea', y='SalePrice', data=data_for_corr, alpha=0.6)
+    plt.title('SalePrice vs Lot Area', fontsize=16)
     plt.xlabel('Lot Area (sq ft)', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
-    plt.legend(title='Bedrooms Above Grade', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    # Format y-axis with dollar signs
+    plt.xlim(0, data_for_corr['LotArea'].quantile(0.95))  # Exclude extreme outliers
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
-    
-    The positive relationship between lot area and sale price is evident from the scatter plot. Larger lots provide more outdoor space and potential for future expansions, thereby increasing the property's appeal and market value. This supports our fifth hypothesis regarding the importance of lot size and frontage in determining house prices.
+
+    The positive relationship between lot area and sale price is evident. Larger lots generally contribute to higher property values, supporting our fifth hypothesis.
     """)
+
     # KitchenQual vs SalePrice_original - Fixed Visualization
     st.write("#### SalePrice vs KitchenQual")
     plt.figure(figsize=(10, 6))
     # Ensure KitchenQual is categorical and ordered
     data_for_corr['KitchenQual'] = pd.Categorical(data_for_corr['KitchenQual'], categories=['Po', 'Fa', 'TA', 'Gd', 'Ex'], ordered=True)
-    sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_corr, palette='Pastel1', order=['Po', 'Fa', 'TA', 'Gd', 'Ex'])  # Using original SalePrice
+    sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_corr, palette='Pastel1')  # Removed 'order' parameter
     plt.title('SalePrice vs Kitchen Quality', fontsize=16)
     plt.xlabel('Kitchen Quality', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
-    # Format y-axis with dollar signs
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
-    
-    The boxplot clearly shows that houses with higher kitchen quality ratings have significantly higher sale prices. This strong positive association validates our sixth hypothesis, emphasizing the critical role of kitchen quality in enhancing property value.
+
+    The boxplot clearly shows that houses with higher kitchen quality ratings have significantly higher sale prices. This strong positive association validates our sixth hypothesis.
     """)
+
     # BedroomAbvGr vs SalePrice_original
     st.write("#### SalePrice vs BedroomAbvGr")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data_for_corr, palette='Set3')  # Using original SalePrice
+    sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data_for_corr, palette='Set3')
     plt.title('SalePrice vs Bedrooms Above Grade', fontsize=16)
     plt.xlabel('Bedrooms Above Grade', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
-    # Format y-axis with dollar signs
+    plt.ylim(0, data_for_corr['SalePrice'].quantile(0.95))  # Exclude extreme outliers
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
-    
-    The boxplot indicates a positive trend where an increasing number of bedrooms above grade correlates with higher sale prices. This finding supports our seventh hypothesis, demonstrating that more bedrooms enhance the property's appeal and market value.
+
+    The boxplot indicates a positive trend where an increasing number of bedrooms above grade correlates with higher sale prices. This finding supports our seventh hypothesis.
     """)
+
     # Additional Visualizations for New Hypotheses
     # YearBuilt vs OverallQual
     st.write("#### OverallQual vs YearBuilt")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='YearBuilt', y='OverallQual', data=data_for_corr, palette='coolwarm', alpha=0.6)
+    sns.scatterplot(x='YearBuilt', y='OverallQual', data=data_for_corr, alpha=0.6)
     plt.title('Overall Quality vs Year Built', fontsize=16)
     plt.xlabel('Year Built', fontsize=12)
     plt.ylabel('Overall Quality', fontsize=12)
     plt.tight_layout()
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
-    
-    The scatter plot shows that newer homes tend to have higher overall quality ratings, but the relationship is not strictly linear. This partially supports our eighth hypothesis, suggesting that while newer homes may use modern materials and designs, older homes can also possess high-quality craftsmanship.
+
+    The scatter plot shows that newer homes tend to have higher overall quality ratings, but there are high-quality older homes as well. This partially validates our eighth hypothesis.
     """)
+
     # GarageArea vs GrLivArea
     st.write("#### GarageArea vs GrLivArea")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='GrLivArea', y='GarageArea', data=data_for_corr, hue='OverallQual', palette='viridis', alpha=0.6)
+    sns.regplot(x='GrLivArea', y='GarageArea', data=data_for_corr, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
     plt.title('Garage Area vs Above Grade Living Area', fontsize=16)
     plt.xlabel('Above Grade Living Area (sq ft)', fontsize=12)
     plt.ylabel('Garage Area (sq ft)', fontsize=12)
-    plt.legend(title='Overall Quality', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
-    
-    There is a positive correlation between the size of the garage and the above-grade living area, supporting our ninth hypothesis. Larger homes typically have larger garages, indicating a relationship between overall house size and garage size.
+
+    There is a positive correlation between the size of the garage and the above-grade living area, supporting our ninth hypothesis.
     """)
+
+    # OverallQual vs TotalSF
+    st.write("#### OverallQual vs TotalSF")
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='OverallQual', y='TotalSF', data=data_for_corr, palette='coolwarm')
+    plt.title('Total Square Footage vs Overall Quality', fontsize=16)
+    plt.xlabel('Overall Quality', fontsize=12)
+    plt.ylabel('Total Square Footage', fontsize=12)
+    plt.tight_layout()
+    st.pyplot(plt)
+
+    st.write("""
+    **Conclusion:**
+
+    The boxplot shows that higher overall quality ratings are associated with larger total square footage, validating our tenth hypothesis.
+    """)
+
     st.write("""
     ### Summary of Hypothesis Validations
-    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, lot size, kitchen quality, and the number of bedrooms above grade are significant determinants of house sale prices. Additionally, relationships between other features like garage size and living area provide deeper insights into property characteristics. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
+
+    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, lot size, kitchen quality, and the number of bedrooms above grade are significant determinants of house sale prices. Additionally, relationships between other features provide deeper insights into property characteristics. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
     """)
+
 # --------------------------- #
 #    Model Performance Tab     #
 # --------------------------- #
+
 with tab5:
     st.title("Model Performance")
     st.header("Performance Metrics")
@@ -1224,6 +1305,7 @@ with tab5:
                         """)
                 else:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
+
 # --------------------------- #
 #          End of App          #
 # --------------------------- #
