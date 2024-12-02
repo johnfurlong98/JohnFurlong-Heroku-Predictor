@@ -7,12 +7,14 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import boxcox
+from scipy.special import inv_boxcox  # Added for inverse Box-Cox transformation
 import pickle
 from pathlib import Path
 
 # --------------------------- #
 #       Configuration          #
 # --------------------------- #
+
 # Get the directory where the script is located
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -26,6 +28,7 @@ st.set_page_config(
 # --------------------------- #
 #       Helper Functions       #
 # --------------------------- #
+
 def check_file_exists(file_path, description):
     """
     Checks if a given file exists. If not, displays an error and stops the app.
@@ -128,6 +131,8 @@ def load_models():
     
     try:
         skewed_features = pickle.load(open(skewed_features_path, 'rb'))
+        # Remove 'SalePrice' if present
+        skewed_features = [feat for feat in skewed_features if feat != 'SalePrice']
     except Exception as e:
         st.error(f"**Error loading skewed_features.pkl:** {e}")
         st.stop()
@@ -173,6 +178,8 @@ def preprocess_data(df, data_reference=None):
     """
     Preprocesses the input data by handling missing values, encoding categorical variables,
     and transforming skewed features.
+    
+    **Note:** The 'SalePrice' is excluded from skewed feature transformations to preserve its original scale for visualization purposes.
     """
     df_processed = df.copy()
     
@@ -255,8 +262,10 @@ def preprocess_data(df, data_reference=None):
     # Feature engineering
     df_processed = feature_engineering(df_processed)
     
-    # Transform skewed features
+    # Transform skewed features, excluding 'SalePrice' to preserve original scale for visualization
     for feat in skewed_features:
+        if feat == 'SalePrice':
+            continue  # Skip transforming 'SalePrice'
         if feat in df_processed.columns:
             if (df_processed[feat] <= 0).any():
                 df_processed[feat] = np.log1p(df_processed[feat])
@@ -275,8 +284,12 @@ def preprocess_data(df, data_reference=None):
 # --------------------------- #
 #       Load Data & Models     #
 # --------------------------- #
+
 # Load data
 data, inherited_houses = load_data()
+
+# Create a copy of the original data before preprocessing for visualization
+data_original = data.copy()
 
 # Load models and related data
 (models, scaler, selected_features, skewed_features, lam_dict, 
@@ -288,6 +301,7 @@ data = preprocess_data(data, data_reference=data)
 # --------------------------- #
 #       Feature Metadata       #
 # --------------------------- #
+
 # Metadata for features (from the provided metadata)
 feature_metadata = {
     '1stFlrSF': 'First Floor square feet',
@@ -314,12 +328,14 @@ feature_metadata = {
     'YearBuilt': 'Original construction date',
     'YearRemodAdd': 'Remodel date',
     'TotalSF': 'Total square feet of house (including basement)',
-    'Qual_TotalSF': 'Product of OverallQual and TotalSF'
+    'Qual_TotalSF': 'Product of OverallQual and TotalSF',
+    'OpenPorchSF': 'Open porch area',
 }
 
 # --------------------------- #
 #   Feature Input Definitions #
 # --------------------------- #
+
 # Define feature input details for the user input form
 feature_input_details = {
     'OverallQual': {
@@ -398,7 +414,7 @@ feature_input_details = {
         'input_type': 'number_input',
         'label': 'Lot Area (sq ft)',
         'min_value': 0,
-        'max_value': 10000,
+        'max_value': 100000,
         'value': 1300,
         'step': 1,
         'help_text': feature_metadata['LotArea']
@@ -547,6 +563,7 @@ feature_input_details = {
 # --------------------------- #
 #       Custom Styling         #
 # --------------------------- #
+
 # Apply custom CSS for enhanced UI (optional)
 st.markdown(
     """
@@ -572,6 +589,7 @@ st.markdown(
 # --------------------------- #
 #          Main App            #
 # --------------------------- #
+
 # Create tabs for navigation
 tabs = ["Project Summary", "Feature Correlations", "House Price Predictions", "Project Hypotheses", "Model Performance"]
 tab1, tab2, tab3, tab4, tab5 = st.tabs(tabs)
@@ -579,38 +597,73 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(tabs)
 # --------------------------- #
 #      Project Summary Tab     #
 # --------------------------- #
+
 with tab1:
     st.title("House Price Prediction Dashboard")
     st.write("""
-    ## Project Summary
-    Welcome to the House Price Prediction Dashboard. This project aims to build a predictive model to estimate the sale prices of houses based on various features. By analyzing the data and developing robust models, we provide insights into the key factors that influence house prices.
-    
-    **Key Objectives:**
-    - **Data Analysis and Preprocessing:** Understand and prepare the data for modeling.
-    - **Feature Engineering:** Create new features to improve model performance.
-    - **Model Development:** Train and evaluate multiple regression models.
-    - **Deployment:** Develop an interactive dashboard for predictions and insights.
-    
-    **Instructions:**
-    - Use the tabs at the top to navigate between different sections.
-    - Explore data correlations, make predictions, and understand the model performance.
+    ## Project Overview
+    Welcome to the **House Price Prediction Dashboard**, an interactive tool designed to estimate the sale prices of residential properties. This dashboard leverages advanced machine learning techniques to provide accurate and insightful predictions, aiding stakeholders such as homeowners, real estate agents, and investors in making informed decisions.
+
+    ### Background
+    The real estate market is influenced by a multitude of factors ranging from physical property attributes to economic conditions. Accurately predicting house prices requires a comprehensive analysis of these variables to understand their impact on market value.
+
+    ### Objectives
+    The primary goals of this project are:
+    - **Data Analysis and Preprocessing:** Perform thorough exploratory data analysis to understand the underlying patterns and relationships within the data. Clean and preprocess the data to ensure quality and consistency.
+    - **Feature Engineering:** Develop new features that enhance the model's predictive capabilities by capturing essential aspects of the properties that influence sale prices.
+    - **Model Development:** Train and evaluate multiple regression models to identify the best-performing algorithm based on key performance metrics.
+    - **Deployment:** Create an interactive and user-friendly dashboard that allows users to explore data insights and obtain real-time house price predictions.
+
+    ### Methodology
+    - **Data Collection:** Utilized historical house sale data, encompassing various features such as structural details, renovations, and amenities.
+    - **Exploratory Data Analysis (EDA):** Conducted in-depth analysis to identify trends, outliers, and correlations between features and the sale price.
+    - **Data Preprocessing:** Addressed missing values, handled categorical variables through encoding, and transformed skewed data distributions to improve model performance.
+    - **Feature Selection:** Employed statistical techniques and model-based methods to select the most significant features influencing house prices.
+    - **Model Training and Evaluation:** Implemented and compared several regression models, including Linear Regression, Ridge Regression, Lasso Regression, ElasticNet, Random Forest, and Gradient Boosting. Evaluated models using metrics like MAE, RMSE, and R² Score.
+    - **Deployment:** Developed this Streamlit dashboard to make the predictive model accessible for real-time use and to present key findings interactively.
+
+    ### Key Features of the Dashboard
+    - **Feature Correlations:** Visualize and understand how different property features correlate with sale prices.
+    - **House Price Predictions:** Input specific property details to receive instant price predictions.
+    - **Hypothesis Testing:** Explore validated hypotheses that explain the impact of various features on house prices.
+    - **Model Performance:** Review the performance metrics and understand the model's predictive power and limitations.
+
+    ### How to Use This Dashboard
+    - Navigate through the tabs at the top to access different sections.
+    - Use the **Feature Correlations** tab to explore how individual features affect house prices.
+    - Visit the **House Price Predictions** tab to estimate the sale price of a property by entering its attributes.
+    - Delve into the **Project Hypotheses** tab to understand the reasoning behind feature selection and their impact on prices.
+    - Check the **Model Performance** tab for detailed insights into the model's accuracy and reliability.
+
+    ### Acknowledgments
+    This project was developed by John Furlong with support from the Code Institute. We acknowledge the Code Institute for providing comprehensive course material, support staff, lectures, and resources that were instrumental in the completion of this project. The project is based on the Ames Housing Dataset, a comprehensive compilation of property sale records.
+
+    ---
     """)
 
 # --------------------------- #
 #    Feature Correlations Tab  #
 # --------------------------- #
+
 with tab2:
     st.title("Feature Correlations")
     st.write("""
     ## Understanding Feature Relationships
     Understanding how different features correlate with the sale price is crucial for building an effective predictive model. This section visualizes the relationships between key property attributes and the sale price.
     """)
+
+    # Prepare data for correlation using original SalePrice
+    data_for_corr = data_original.copy()
+
+    # Add necessary features for correlation
+    data_for_corr = data_for_corr.join(data.drop('SalePrice', axis=1))
+
     # Compute correlation matrix
-    corr_matrix = data.corr()
+    corr_matrix = data_for_corr.corr()
     if 'SalePrice' not in corr_matrix.columns:
         st.error("**Error:** 'SalePrice' column not found in the dataset.")
     else:
-        # Select features with high correlation (absolute value > 0.5)
+        # Select features with high correlation (absolute value > 0.5) with original SalePrice
         top_corr_features = corr_matrix.index[abs(corr_matrix['SalePrice']) > 0.5].tolist()
         if len(top_corr_features) == 0:
             st.warning("**Warning:** No features found with a correlation greater than 0.5 with 'SalePrice'.")
@@ -619,9 +672,9 @@ with tab2:
             ### Top Correlated Features with Sale Price
             The heatmap below shows the correlation coefficients between the sale price and other features. Features with higher absolute correlation values have a stronger relationship with the sale price.
             """)
-            # Plot correlation heatmap
+            # Plot correlation heatmap using original SalePrice
             plt.figure(figsize=(12, 8))
-            sns.heatmap(data[top_corr_features].corr(), annot=True, cmap='RdBu', linewidths=0.5, fmt=".2f")
+            sns.heatmap(data_for_corr[top_corr_features].corr(), annot=True, cmap='RdBu', linewidths=0.5, fmt=".2f")
             plt.title('Correlation Heatmap of Top Features', fontsize=16)
             plt.xticks(rotation=45, ha='right')
             plt.yticks(rotation=0)
@@ -632,8 +685,9 @@ with tab2:
             - **Above Grade Living Area (`GrLivArea`):** Larger living areas are associated with higher sale prices.
             - **Total Square Footage (`TotalSF`):** Total area including basement and above-ground strongly influences sale price.
             - **Garage Area (`GarageArea`):** Larger garages contribute to higher house values.
-            - **Lot Area (`LotArea`):** Bigger lots generally correlate with increased sale prices.
+            - **Kitchen Quality (`KitchenQual`):** Higher kitchen quality correlates with increased sale prices.
             """)
+
             # Additional visualization: Pairplot with top features
             st.write("### Pairplot of Top Correlated Features")
             # Select top 5 features excluding 'SalePrice'
@@ -643,10 +697,10 @@ with tab2:
             else:
                 # To optimize performance, sample the data if it's too large
                 sample_size = 500  # Adjust based on performance
-                if data.shape[0] > sample_size:
-                    pairplot_data = data[top_features + ['SalePrice']].sample(n=sample_size, random_state=42)
+                if data_for_corr.shape[0] > sample_size:
+                    pairplot_data = data_for_corr[top_features + ['SalePrice']].sample(n=sample_size, random_state=42)
                 else:
-                    pairplot_data = data[top_features + ['SalePrice']]
+                    pairplot_data = data_for_corr[top_features + ['SalePrice']]
                 
                 sns.set(style="ticks")
                 pairplot_fig = sns.pairplot(pairplot_data, diag_kind='kde', height=2.5)
@@ -655,29 +709,45 @@ with tab2:
                 st.write("""
                 The pairplot above visualizes pairwise relationships between the top correlated features and the sale price. Sampling the data ensures quicker rendering while maintaining the overall trend insights.
                 """)
+
+        # New section: Correlation Matrix for All Features
+        st.write("### Complete Correlation Matrix")
+        st.write("""
+        The correlation matrix below provides a comprehensive view of the relationships between all features and the sale price.
+        """)
+        plt.figure(figsize=(16, 12))
+        sns.heatmap(data_for_corr.corr(), cmap='coolwarm', annot=False)
+        plt.title('Complete Correlation Matrix', fontsize=16)
+        plt.xticks(rotation=45, ha='right')
+        plt.yticks(rotation=0)
+        st.pyplot(plt)
+        st.write("""
+        **Observations:**
+        - Features like `TotalSF`, `GrLivArea`, and `OverallQual` have strong positive correlations with `SalePrice`.
+        - Some features exhibit multicollinearity, which was addressed during feature selection to improve model performance.
+        """)
+
     st.write("""
     ### Interpreting Correlations
     - **Feature Selection:** Highly correlated features are prioritized for model training to enhance predictive performance.
     - **Multicollinearity Detection:** Identifying correlated features helps in mitigating multicollinearity issues, which can adversely affect certain regression models.
     - **Insight Generation:** Correlation analysis provides actionable insights into what drives house prices, aiding stakeholders in making informed decisions.
-    
+
     **Note:** Correlation does not imply causation. While features may be correlated with the sale price, further analysis is required to establish causal relationships.
     """)
 
 # --------------------------- #
 #  House Price Predictions Tab #
 # --------------------------- #
+
 with tab3:
     st.title("House Price Predictions")
-    
     # Inherited Houses Predictions
     st.header("Inherited Houses")
     st.write("""
     ## Predicted Sale Prices for Inherited Houses
-    
     In this section, we provide estimated sale prices for the inherited houses. Utilizing our best-performing regression model, these predictions offer valuable insights into the potential market value of these properties.
     """)
-    
     # Preprocess and predict for inherited houses
     inherited_processed = preprocess_data(inherited_houses, data_reference=data)
     if selected_features is None or len(selected_features) == 0:
@@ -695,57 +765,43 @@ with tab3:
                     available_evaluations = model_evaluation[model_evaluation['Model'] != 'XGBoost']
                 else:
                     available_evaluations = model_evaluation
-    
                 if available_evaluations.empty:
                     st.error("**Error:** No models available after excluding 'XGBoost'.")
                     st.stop()
-    
                 if 'RMSE' not in available_evaluations.columns or 'Model' not in available_evaluations.columns:
                     st.error("**Error:** 'RMSE' or 'Model' columns not found in the evaluation results.")
                     st.stop()
-    
                 best_model_row = available_evaluations.loc[available_evaluations['RMSE'].idxmin()]
                 best_model_name = best_model_row['Model']
-    
             if best_model_name not in models:
                 st.error(f"**Error:** Best model '{best_model_name}' not found among loaded models.")
             else:
                 selected_model = models[best_model_name]
                 predictions_log = selected_model.predict(inherited_scaled)
-                # Inverse transformation
-                if 'SalePrice' in lam_dict:
-                    predictions_actual = np.expm1(predictions_log)  # Assuming log transformation
-                else:
-                    predictions_actual = np.expm1(predictions_log)
+                predictions_actual = np.expm1(predictions_log)
                 predictions_actual[predictions_actual < 0] = 0  # Handle negative predictions
-    
                 # Add predictions to the processed DataFrame
                 inherited_processed['Predicted SalePrice'] = predictions_actual
-    
                 # Display the DataFrame with the selected features
                 display_columns = ['Predicted SalePrice'] + list(selected_features)
                 missing_cols = [col for col in display_columns if col not in inherited_processed.columns]
                 if missing_cols:
                     st.warning(f"The following columns are missing in the inherited houses data: {missing_cols}")
                     display_columns = [col for col in display_columns if col in inherited_processed.columns]
-    
                 # Format the 'Predicted SalePrice' as currency
                 inherited_processed['Predicted SalePrice'] = inherited_processed['Predicted SalePrice'].apply(lambda x: f"${x:,.2f}")
-    
                 st.dataframe(inherited_processed[display_columns].style.format({"Predicted SalePrice": lambda x: x}))
                 total_predicted_price = predictions_actual.sum()
                 st.success(f"The total predicted sale price for all inherited houses is **${total_predicted_price:,.2f}**.")
         except Exception as e:
             st.error(f"**Error during prediction:** {e}")
-    
     # Real-Time Prediction
     st.header("Real-Time House Price Prediction")
     st.write("""
     ## Predict Sale Prices in Real-Time
-    
     Harness the power of our predictive model by inputting specific house attributes to receive instant sale price estimates. This feature is particularly useful for assessing the value of a property based on its characteristics.
     """)
-    
+
     def user_input_features():
         """
         Creates a form for users to input house features and returns the input data as a DataFrame.
@@ -807,25 +863,21 @@ with tab3:
             return input_df
         else:
             return None
-    
+
     user_input = user_input_features()
     if user_input is not None:
         try:
             user_processed = preprocess_data(user_input, data_reference=data)
             user_scaled = scaler.transform(user_processed[selected_features])
             user_pred_log = models[best_model_name].predict(user_scaled)  # Use the best model
-            # Inverse transformation
-            if 'SalePrice' in lam_dict:
-                user_pred_actual = np.expm1(user_pred_log)  # Assuming log transformation
-            else:
-                user_pred_actual = np.expm1(user_pred_log)
-            user_pred_actual = max(user_pred_actual[0], 0)  # Handle negative predictions
-            st.success(f"The predicted sale price is **${user_pred_actual:,.2f}**.")
+            user_pred_actual = np.expm1(user_pred_log)
+            user_pred_actual[user_pred_actual < 0] = 0  # Handle negative predictions
+            st.success(f"The predicted sale price is **${user_pred_actual[0]:,.2f}**.")
         except Exception as e:
             st.error(f"**Error during prediction:** {e}")
+
     st.write("""
     ### How It Works
-    
     1. **Input Features:** Enter the specific attributes of the house you're evaluating.
     2. **Data Preprocessing:** The input data undergoes the same preprocessing steps as the training data to ensure consistency.
     3. **Feature Scaling:** Numerical features are scaled to match the scale of the training data, enhancing model performance.
@@ -836,15 +888,33 @@ with tab3:
 # --------------------------- #
 #      Project Hypotheses Tab  #
 # --------------------------- #
+
 with tab4:
     st.title("Project Hypotheses")
     st.write("""
     ## Hypothesis Validation
-    
     In this section, we explore the foundational hypotheses that guided our analysis and modeling efforts. Each hypothesis is validated using statistical and machine learning techniques, providing a deeper understanding of the factors influencing house prices.
     """)
+
+    # Create a separate DataFrame for plotting with original values
+    data_for_plotting = data_original.copy()
+
+    # Add necessary features for plotting from the original data
+    features_to_add = ['BedroomAbvGr', 'GrLivArea', 'OverallQual', 'YearRemodAdd',
+                       'GarageArea', 'GarageFinish', 'YearBuilt', 'KitchenQual',
+                       'TotalBsmtSF', '1stFlrSF', '2ndFlrSF', 'OverallCond']
+    for feature in features_to_add:
+        data_for_plotting[feature] = data_original[feature]
+
+    # Recalculate 'TotalSF' and 'Qual_TotalSF' using original data
+    data_for_plotting['TotalSF'] = data_for_plotting['TotalBsmtSF'] + data_for_plotting['1stFlrSF'] + data_for_plotting['2ndFlrSF']
+    data_for_plotting['Qual_TotalSF'] = data_for_plotting['OverallQual'] * data_for_plotting['TotalSF']
+
+    # Map ordinal features for plotting purposes
+    # Since 'KitchenQual' in original data has categorical values, we can use them directly
+
     # Primary Hypotheses
-    st.subheader("### Primary Hypotheses")
+    st.subheader("Primary Hypotheses")
     st.write("""
     **Hypothesis 1:** *Higher overall quality of the house leads to a higher sale price.*
     
@@ -870,16 +940,16 @@ with tab4:
     - **Validation:** Features like `GarageArea` and `GarageFinish` show positive correlations with the sale price, validating this hypothesis.
     """)
     st.write("""
-    **Hypothesis 5:** *Lot size and frontage are key determinants of a house's market value.*
+    **Hypothesis 5:** *Higher kitchen quality leads to a higher sale price.*
     
-    - **Rationale:** Larger lots provide more outdoor space, which is desirable for families and can offer potential for future expansions or landscaping.
-    - **Validation:** The `LotArea` and `LotFrontage` features have significant positive correlations with the sale price, supporting this hypothesis.
+    - **Rationale:** The kitchen is often considered the heart of the home, and high-quality kitchens can significantly increase a property's appeal and value.
+    - **Validation:** The `KitchenQual` feature shows a strong positive correlation with the sale price, supporting this hypothesis.
     """)
     st.write("""
-    **Hypothesis 6:** *Kitchen quality is a strong predictor of a house's sale price.*
+    **Hypothesis 6:** *Houses with higher overall condition ratings have higher sale prices.*
     
-    - **Rationale:** Kitchens are central to modern living, and high-quality kitchens with modern appliances and finishes are highly sought after.
-    - **Validation:** The `KitchenQual` feature demonstrates a positive correlation with the sale price, confirming its importance.
+    - **Rationale:** The overall condition reflects the current state of the property, influencing buyers' perceptions and willingness to pay.
+    - **Validation:** The `OverallCond` feature shows a positive correlation with the sale price, supporting this hypothesis.
     """)
     st.write("""
     **Hypothesis 7:** *The number of bedrooms above grade influences the sale price.*
@@ -887,124 +957,216 @@ with tab4:
     - **Rationale:** More bedrooms can accommodate larger families, increasing the property's appeal to potential buyers.
     - **Validation:** The `BedroomAbvGr` feature shows a positive correlation with the sale price, supporting this hypothesis.
     """)
+
+    # Additional Hypotheses on Other Correlations
+    st.subheader("### Additional Hypotheses on Feature Correlations")
+    st.write("""
+    **Hypothesis 8:** *Older homes may have higher overall quality due to superior craftsmanship.*
+    
+    - **Rationale:** Some older homes are built with high-quality materials and craftsmanship that are highly valued.
+    - **Validation:** Analyzing the relationship between `YearBuilt` and `OverallQual` can reveal trends in quality over time.
+    """)
+    st.write("""
+    **Hypothesis 9:** *Garage size is positively correlated with the living area.*
+    
+    - **Rationale:** Larger homes often come with larger garages, reflecting a consistent scale of property size.
+    - **Validation:** Investigating the correlation between `GarageArea` and `GrLivArea` can confirm this relationship.
+    """)
+    st.write("""
+    **Hypothesis 10:** *Properties with higher overall quality tend to have larger total square footage.*
+    
+    - **Rationale:** Higher quality homes might also be larger, offering more space and amenities.
+    - **Validation:** Examining the relationship between `OverallQual` and `TotalSF` can validate this hypothesis.
+    """)
+
     # Visualization for Hypotheses
     st.write("### Visualization of Hypotheses")
-    # GrLivArea vs SalePrice
-    st.write("#### SalePrice vs GrLivArea")
+    sns.set(style="whitegrid")
+
+    # OverallQual vs SalePrice_original
+    st.write("#### SalePrice vs OverallQual")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='GrLivArea', y='SalePrice', data=data, hue='OverallQual', palette='coolwarm', alpha=0.6)
-    plt.title('SalePrice vs GrLivArea', fontsize=16)
-    plt.xlabel('Above Grade Living Area (sq ft)', fontsize=12)
+    sns.boxplot(x='OverallQual', y='SalePrice', data=data_for_plotting, palette='Set2')
+    plt.title('SalePrice vs Overall Quality', fontsize=16)
+    plt.xlabel('Overall Quality', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
-    plt.legend(title='Overall Quality', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
     
-    The scatter plot reveals a positive correlation between above-grade living area and sale price. Larger living areas are associated with higher sale prices, supporting our second hypothesis.
+    The boxplot illustrates a clear trend where houses with higher overall quality ratings command higher sale prices. This strong positive relationship validates our first hypothesis, emphasizing the significant impact of overall quality on property value.
     """)
-    # TotalSF vs SalePrice
+
+    # TotalSF vs SalePrice_original
     st.write("#### SalePrice vs TotalSF")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='TotalSF', y='SalePrice', data=data, hue='OverallQual', palette='coolwarm', alpha=0.6)
-    plt.title('SalePrice vs TotalSF', fontsize=16)
-    plt.xlabel('Total Square Footage (sq ft)', fontsize=12)
+    sns.regplot(x='TotalSF', y='SalePrice', data=data_for_plotting, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
+    plt.title('SalePrice vs Total Square Footage', fontsize=16)
+    plt.xlabel('Total Square Footage', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
-    plt.legend(title='Overall Quality', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
     
-    The scatter plot shows that total square footage, including basement and above-ground areas, strongly influences the sale price. This aligns with our second hypothesis, emphasizing the importance of size in property valuation.
+    The scatter plot with regression line reveals a strong positive correlation between total square footage and sale price. Larger homes tend to have higher sale prices, supporting our second hypothesis that size is a key determinant of property value.
     """)
-    # YearRemodAdd vs SalePrice
-    st.write("#### SalePrice vs YearRemodAdd")
+
+    # YearRemodAdd vs SalePrice_original
+    st.write("#### SalePrice vs YearRemodeled")
     plt.figure(figsize=(10, 6))
-    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data, color='green', ci=None)
+    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data_for_plotting, color='green', ci=None)
     plt.title('SalePrice vs Year Remodeled', fontsize=16)
     plt.xlabel('Year Remodeled', fontsize=12)
     plt.ylabel('Average Sale Price (USD)', fontsize=12)
     plt.tight_layout()
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
     
-    The line plot illustrates an upward trend in sale prices with more recent remodeling years. This suggests that recent renovations and updates significantly enhance the property's market value, validating our third hypothesis.
+    The line plot shows an upward trend in sale prices with more recent remodeling years. This indicates that recent renovations contribute positively to the property's market value, validating our third hypothesis.
     """)
-    # GarageArea vs SalePrice
+
+    # GarageArea vs SalePrice_original
     st.write("#### SalePrice vs GarageArea")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='GarageArea', y='SalePrice', data=data, hue='GarageFinish', palette='viridis', alpha=0.6)
-    plt.title('SalePrice vs GarageArea', fontsize=16)
+    sns.scatterplot(x='GarageArea', y='SalePrice', data=data_for_plotting, hue='GarageFinish', palette='viridis', alpha=0.6)
+    plt.title('SalePrice vs Garage Area', fontsize=16)
     plt.xlabel('Garage Area (sq ft)', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.legend(title='Garage Finish', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
     
-    The scatter plot indicates that larger garage areas are associated with higher sale prices. Additionally, the quality of the garage finish further enhances the property's value. These findings support our fourth hypothesis, highlighting the significant role of garage features in determining house prices.
+    The scatter plot indicates that larger garage areas are associated with higher sale prices. Additionally, the quality of the garage finish enhances the property's value, confirming our fourth hypothesis.
     """)
-    # LotArea vs SalePrice
-    st.write("#### SalePrice vs LotArea")
-    plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='LotArea', y='SalePrice', data=data, hue='BedroomAbvGr', palette='magma', alpha=0.6)
-    plt.title('SalePrice vs LotArea', fontsize=16)
-    plt.xlabel('Lot Area (sq ft)', fontsize=12)
-    plt.ylabel('Sale Price (USD)', fontsize=12)
-    plt.legend(title='Bedrooms Above Grade', bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
-    st.pyplot(plt)
-    st.write("""
-    **Conclusion:**
-    
-    The positive relationship between lot area and sale price is evident from the scatter plot. Larger lots provide more outdoor space and potential for future expansions, thereby increasing the property's appeal and market value. This supports our fifth hypothesis regarding the importance of lot size and frontage in determining house prices.
-    """)
-    # KitchenQual vs SalePrice
+
+    # KitchenQual vs SalePrice_original
     st.write("#### SalePrice vs KitchenQual")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='KitchenQual', y='SalePrice', data=data, palette='Pastel1')
-    plt.title('SalePrice vs KitchenQual', fontsize=16)
+    sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_plotting, palette='Blues', order=['Po', 'Fa', 'TA', 'Gd', 'Ex'])
+    plt.title('SalePrice vs Kitchen Quality', fontsize=16)
     plt.xlabel('Kitchen Quality', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
     
-    The boxplot clearly shows that houses with higher kitchen quality ratings have significantly higher sale prices. This strong positive association validates our sixth hypothesis, emphasizing the critical role of kitchen quality in enhancing property value.
+    The boxplot demonstrates that houses with higher kitchen quality ratings tend to have higher sale prices. This strong positive relationship validates our fifth hypothesis, highlighting the importance of kitchen quality in determining property value.
     """)
-    # BedroomAbvGr vs SalePrice
+
+    # OverallCond vs SalePrice_original
+    st.write("#### SalePrice vs OverallCond")
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='OverallCond', y='SalePrice', data=data_for_plotting, palette='Oranges')
+    plt.title('SalePrice vs Overall Condition', fontsize=16)
+    plt.xlabel('Overall Condition', fontsize=12)
+    plt.ylabel('Sale Price (USD)', fontsize=12)
+    plt.tight_layout()
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
+    st.pyplot(plt)
+
+    st.write("""
+    **Conclusion:**
+    
+    The boxplot shows that houses with higher overall condition ratings generally have higher sale prices. This supports our sixth hypothesis, indicating that the overall condition of the house is a significant factor influencing property value.
+    """)
+
+    # BedroomAbvGr vs SalePrice_original
     st.write("#### SalePrice vs BedroomAbvGr")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data, palette='Set3')
-    plt.title('SalePrice vs BedroomAbvGr', fontsize=16)
+    sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data_for_plotting, palette='Set3')
+    plt.title('SalePrice vs Bedrooms Above Grade', fontsize=16)
     plt.xlabel('Bedrooms Above Grade', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
+    plt.ylim(0, data_for_plotting['SalePrice'].quantile(0.95))  # Exclude extreme outliers
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
+
     st.write("""
     **Conclusion:**
     
-    The boxplot indicates a positive trend where an increasing number of bedrooms above grade correlates with higher sale prices. This finding supports our seventh hypothesis, demonstrating that more bedrooms enhance the property's appeal and market value.
+    The boxplot indicates a positive trend where an increasing number of bedrooms above grade correlates with higher sale prices. This finding supports our seventh hypothesis.
     """)
+
+    # Additional Visualizations for New Hypotheses
+    # YearBuilt vs OverallQual
+    st.write("#### OverallQual vs YearBuilt")
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x='YearBuilt', y='OverallQual', data=data_for_plotting, alpha=0.6)
+    plt.title('Overall Quality vs Year Built', fontsize=16)
+    plt.xlabel('Year Built', fontsize=12)
+    plt.ylabel('Overall Quality', fontsize=12)
+    plt.tight_layout()
+    st.pyplot(plt)
+
+    st.write("""
+    **Conclusion:**
+    
+    The scatter plot shows that newer homes tend to have higher overall quality ratings, but there are high-quality older homes as well. This partially validates our eighth hypothesis.
+    """)
+
+    # GarageArea vs GrLivArea
+    st.write("#### GarageArea vs GrLivArea")
+    plt.figure(figsize=(10, 6))
+    sns.regplot(x='GrLivArea', y='GarageArea', data=data_for_plotting, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
+    plt.title('Garage Area vs Above Grade Living Area', fontsize=16)
+    plt.xlabel('Above Grade Living Area (sq ft)', fontsize=12)
+    plt.ylabel('Garage Area (sq ft)', fontsize=12)
+    plt.tight_layout()
+    st.pyplot(plt)
+
+    st.write("""
+    **Conclusion:**
+    
+    There is a positive correlation between the size of the garage and the above-grade living area, supporting our ninth hypothesis.
+    """)
+
+    # OverallQual vs TotalSF
+    st.write("#### OverallQual vs TotalSF")
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='OverallQual', y='TotalSF', data=data_for_plotting, palette='coolwarm')
+    plt.title('Total Square Footage vs Overall Quality', fontsize=16)
+    plt.xlabel('Overall Quality', fontsize=12)
+    plt.ylabel('Total Square Footage', fontsize=12)
+    plt.tight_layout()
+    st.pyplot(plt)
+
+    st.write("""
+    **Conclusion:**
+    
+    The boxplot shows that higher overall quality ratings are associated with larger total square footage, validating our tenth hypothesis.
+    """)
+
     st.write("""
     ### Summary of Hypothesis Validations
-    
-    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, lot size, kitchen quality, and the number of bedrooms above grade are significant determinants of house sale prices. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
+
+    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, kitchen quality, overall condition, and the number of bedrooms above grade are significant determinants of house sale prices. Additionally, relationships between other features provide deeper insights into property characteristics. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
     """)
 
 # --------------------------- #
 #    Model Performance Tab     #
 # --------------------------- #
+
 with tab5:
     st.title("Model Performance")
     st.header("Performance Metrics")
     results_df = model_evaluation
-
     if results_df.empty:
         st.warning("**Warning:** Model evaluation results are empty.")
     else:
@@ -1019,15 +1181,10 @@ with tab5:
             else:
                 st.write("""
                 ### Model Evaluation Metrics
-
                 The table below presents the performance metrics of various regression models. These metrics help in assessing the accuracy and reliability of each model.
                 """)
                 # Display the evaluation table with formatted columns
-                st.dataframe(results_df_filtered.style.format({
-                    'MAE': '${:,.2f}',
-                    'RMSE': '${:,.2f}',
-                    'R² Score': '{:.4f}'
-                }))
+                st.dataframe(results_df_filtered.style.format({'MAE': '${:,.2f}', 'RMSE': '${:,.2f}', 'R² Score': '{:.4f}'}))
                 # Determine best model based on RMSE
                 best_model_row = results_df_filtered.loc[results_df_filtered['RMSE'].idxmin()]
                 best_model_name = best_model_row['Model']
@@ -1037,12 +1194,10 @@ with tab5:
                 """)
                 st.write("""
                 ### Understanding the Metrics
-
                 - **Mean Absolute Error (MAE):** Represents the average absolute difference between predicted and actual sale prices. A lower MAE indicates better model accuracy.
                 - **Root Mean Squared Error (RMSE):** Similar to MAE but penalizes larger errors more heavily. Lower RMSE values signify a more precise model.
                 - **R² Score:** Measures the proportion of variance in the sale price that is predictable from the features. An R² closer to 1 indicates a model that explains a large portion of the variance.
                 """)
-                
                 st.header("Detailed Pipeline Explanation")
                 st.write("""
                 The success of our predictive model hinges on a meticulously crafted pipeline that encompasses data preprocessing, feature engineering, model training, and evaluation. Here's an in-depth look into each stage:
@@ -1112,13 +1267,11 @@ with tab5:
                   - Allows users to input house features and obtain immediate sale price estimates.
                   - Incorporates visual insights into feature correlations, model performance, and hypothesis validations to enhance user understanding.
                 """)
-                
                 st.header("Feature Importances")
                 # Display feature importances from the best-performing model
                 if best_model_name in models:
                     # Assuming feature_importances.csv has 'Feature' and 'Importance' columns
                     feature_importances_best = feature_importances.copy()
-    
                     if feature_importances_best.empty:
                         st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
                     else:
@@ -1129,13 +1282,13 @@ with tab5:
                         plt.ylabel('Feature', fontsize=12)
                         plt.tight_layout()
                         st.pyplot(plt)
-    
                         st.write("""
-                        The bar chart above illustrates the relative importance of each feature in predicting the sale price. Notably, features like `GrLivArea`, `TotalSF`, and `GarageArea` are among the most significant contributors, reaffirming their critical role in determining property values.
+                        The bar chart above illustrates the relative importance of each feature in predicting the sale price. Notably, features like `GrLivArea`, `OverallQual`, and `TotalSF` are among the most significant contributors, reaffirming their critical role in determining property values.
                         """)
                 else:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
-                
+
+                # Remove Residual Analysis and Replace with Predicted vs Actual Plot
                 st.header("Predicted vs Actual Sale Prices")
                 st.write("""
                 ### Predicted vs Actual Sale Prices Plot
@@ -1168,81 +1321,6 @@ with tab5:
                     """)
                 except Exception as e:
                     st.error(f"**Error during plotting Predicted vs Actual Sale Prices:** {e}")
-                
-                st.header("Model Performance Across Sale Price Ranges")
-                st.write("""
-                ### Model Performance Across Different Sale Price Ranges
-                
-                This section visualizes how different models perform across various sale price ranges, providing insights into their strengths and weaknesses in different market segments.
-                """)
-                try:
-                    # Create sale price bins
-                    price_bins = pd.qcut(data['SalePrice'], q=5, duplicates='drop')
-                    data['PriceBin'] = price_bins
-                except Exception as e:
-                    st.error(f"**Error creating price bins:** {e}")
-                    st.stop()
-                
-                # Prepare a dataframe for model performance across price bins
-                models_performance = {}
-                for model_name in results_df_filtered['Model']:
-                    if model_name not in models:
-                        continue
-                    model = models[model_name]
-                    try:
-                        # Split data into bins
-                        performance = data.groupby('PriceBin').apply(lambda x: model.score(
-                            scaler.transform(x[selected_features]),
-                            x['SalePrice']
-                        )).reset_index()
-                        performance.columns = ['PriceBin', 'R2_Score']
-                        models_performance[model_name] = performance
-                    except Exception as e:
-                        st.error(f"**Error evaluating model '{model_name}' across price bins:** {e}")
-                        continue
-                
-                if not models_performance:
-                    st.warning("**Warning:** No model performance data available across price bins.")
-                else:
-                    performance_df = pd.DataFrame()
-                    for model_name, perf in models_performance.items():
-                        perf = perf.rename(columns={'R2_Score': model_name})
-                        if performance_df.empty:
-                            performance_df = perf
-                        else:
-                            performance_df = pd.merge(performance_df, perf, on='PriceBin', how='outer')
-                    
-                    # Melt the dataframe for seaborn
-                    performance_melted = performance_df.melt(id_vars=['PriceBin'], var_name='Model', value_name='R2_Score')
-                    
-                    # Plot
-                    plt.figure(figsize=(12, 8))
-                    sns.lineplot(x='PriceBin', y='R2_Score', hue='Model', data=performance_melted, marker='o')
-                    plt.title('Model R² Score Across Sale Price Bins', fontsize=16)
-                    plt.xlabel('Sale Price Range', fontsize=12)
-                    plt.ylabel('R² Score', fontsize=12)
-                    plt.xticks(rotation=45, ha='right')
-                    plt.legend(title='Model', bbox_to_anchor=(1.05, 1), loc='upper left')
-                    plt.tight_layout()
-                    st.pyplot(plt)
-                    st.write("""
-                    **Insights:**
-                    
-                    - **Performance Variability:** Some models perform consistently across all price ranges, while others excel in specific segments.
-                    - **Best Models:** Models with higher R² scores across multiple bins are more robust and reliable.
-                    - **Segmentation Benefits:** Understanding model performance in different price segments can guide model selection based on target market segments.
-                    """)
-    st.write("""
-    ### Conclusion
-    
-    The comprehensive evaluation of our regression models underscores the effectiveness of our predictive pipeline. By meticulously preprocessing data, engineering relevant features, and selecting robust models, we've achieved high prediction accuracy and reliability. The insights derived from feature importance, predicted vs actual sale prices, and model performance across price ranges further validate our approach, ensuring that the dashboard provides meaningful and actionable information to its users.
-    
-    **Next Steps:**
-    - **Data Enrichment:** Incorporate additional features such as geographical location, proximity to amenities, and economic indicators to enhance model performance.
-    - **Model Expansion:** Explore and integrate more sophisticated models or ensemble techniques to capture complex data patterns.
-    - **User Feedback:** Gather feedback from users to identify areas of improvement and potential new features for the dashboard.
-    - **Continuous Monitoring:** Implement mechanisms to monitor model performance over time, ensuring sustained accuracy and relevance.
-    """)
 
 # --------------------------- #
 #          End of App          #
