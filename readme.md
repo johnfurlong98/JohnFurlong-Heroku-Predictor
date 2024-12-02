@@ -207,7 +207,7 @@ At the time of deployment, there are **no known unfixed bugs**. All features and
 
 ### Heroku
 
-*The app live link is: [House Price Prediction Dashboard](https://your-app-name.herokuapp.com/)*
+*The app live link is: [House Price Prediction Dashboard](https://john-furlong-price-predictor-ee67ab0394fa.herokuapp.com/)*
 
 **Deployment Steps:**
 
