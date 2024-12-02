@@ -1283,17 +1283,17 @@ with tab5:
 
                 # Add Residual Analysis Section
                 st.header("Residual Analysis")
-                st.write("""
-                ### Residual Plot of the Best Model
-                The residual plot helps in diagnosing the performance of the regression model by visualizing the differences between the actual and predicted values.
-                """)
-                try:
-                    # Assuming train_test_data contains X_train, X_test, y_train, y_test
-                    X_train = train_test_data['X_train']
-                    X_test = train_test_data['X_test']
-                    y_train = train_test_data['y_train']
-                    y_test = train_test_data['y_test']
-                    # Predict on the test set
+            st.write("""
+            ### Residual Plot of the Best Model
+            The residual plot helps in diagnosing the performance of the regression model by visualizing the differences between the actual and predicted values.
+            """)
+            try:
+                    # Access train_test_data using indices because it's a tuple
+                    X_train = train_test_data[0]
+                    X_test = train_test_data[1]
+                    y_train = train_test_data[2]
+                    y_test = train_test_data[3]
+                    #Predict on the test set
                     y_pred_log = models[best_model_name].predict(X_test)
                     y_pred = np.expm1(y_pred_log)
                     y_actual = np.expm1(y_test)
@@ -1313,8 +1313,13 @@ with tab5:
                     - The residuals are fairly randomly dispersed around zero, indicating a good fit.
                     - No obvious patterns suggest that the model's assumptions are reasonable.
                     """)
-                except Exception as e:
+            except Exception as e:
                     st.error(f"**Error during residual analysis:** {e}")
+
+# --------------------------- #
+#          End of App          #
+# --------------------------- #
+
 
 # --------------------------- #
 #          End of App          #
