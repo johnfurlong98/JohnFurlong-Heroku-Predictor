@@ -237,7 +237,7 @@ def preprocess_data(df, data_reference=None):
     
     # Fill numerical features using median from training data
     numerical_median_fill = ['BedroomAbvGr', 'GarageYrBlt', 'LotFrontage', 
-                             'OverallQual', 'OverallCond', 'YearBuilt', 'YearRemodAdd', 'FullBath']
+                             'OverallQual', 'OverallCond', 'YearBuilt', 'YearRemodAdd']
     for feature in numerical_median_fill:
         if feature in df_processed.columns:
             if data_reference is not None and feature in data_reference.columns:
@@ -328,7 +328,6 @@ feature_metadata = {
     'TotalSF': 'Total square feet of house (including basement)',
     'Qual_TotalSF': 'Product of OverallQual and TotalSF',
     'OpenPorchSF': 'Open porch area',
-    'FullBath': 'Full bathrooms above grade',
 }
 
 # --------------------------- #
@@ -556,15 +555,6 @@ feature_input_details = {
         'value': int(data['MasVnrArea'].median()) if 'MasVnrArea' in data.columns else 0,
         'step': 1,
         'help_text': feature_metadata['MasVnrArea']
-    },
-    'FullBath': {
-        'input_type': 'slider',
-        'label': 'Full Bathrooms Above Grade',
-        'min_value': 0,
-        'max_value': 4,
-        'value': int(data['FullBath'].median()) if 'FullBath' in data.columns else 2,
-        'step': 1,
-        'help_text': feature_metadata['FullBath']
     },
 }
 
@@ -821,7 +811,7 @@ with tab3:
                 'Basement': ['BsmtFinType1', 'BsmtExposure', 'BsmtFinSF1', 'BsmtUnfSF'],
                 'Garage': ['GarageFinish', 'GarageYrBlt', 'GarageArea'],
                 'Porch/Deck': ['WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch'],
-                'Other': ['BedroomAbvGr', 'KitchenQual', 'MasVnrArea', 'FullBath'],
+                'Other': ['BedroomAbvGr', 'KitchenQual', 'MasVnrArea'],
             }
             for group_name, features in feature_groups.items():
                 st.subheader(group_name)
@@ -914,10 +904,10 @@ with tab4:
     data_for_plotting['YearBuilt'] = data['YearBuilt']
     data_for_plotting['KitchenQual'] = data['KitchenQual']
     data_for_plotting['TotalSF'] = data['TotalSF']
-    data_for_plotting['FullBath'] = data['FullBath']
+    data_for_plotting['OverallCond'] = data['OverallCond']
 
     # Primary Hypotheses
-    st.subheader("### Primary Hypotheses")
+    st.subheader("Primary Hypotheses")
     st.write("""
     **Hypothesis 1:** *Higher overall quality of the house leads to a higher sale price.*
     
@@ -949,10 +939,10 @@ with tab4:
     - **Validation:** The `KitchenQual` feature shows a strong positive correlation with the sale price, supporting this hypothesis.
     """)
     st.write("""
-    **Hypothesis 6:** *Homes with more full bathrooms have higher sale prices.*
+    **Hypothesis 6:** *Houses with higher overall condition ratings have higher sale prices.*
     
-    - **Rationale:** The number of full bathrooms contributes to the functionality and convenience of a home, influencing buyers' willingness to pay.
-    - **Validation:** The `FullBath` feature shows a positive correlation with the sale price, supporting this hypothesis.
+    - **Rationale:** The overall condition reflects the current state of the property, influencing buyers' perceptions and willingness to pay.
+    - **Validation:** The `OverallCond` feature shows a positive correlation with the sale price, supporting this hypothesis.
     """)
     st.write("""
     **Hypothesis 7:** *The number of bedrooms above grade influences the sale price.*
@@ -999,7 +989,7 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-
+    
     The boxplot illustrates a clear trend where houses with higher overall quality ratings command higher sale prices. This strong positive relationship validates our first hypothesis, emphasizing the significant impact of overall quality on property value.
     """)
 
@@ -1016,7 +1006,7 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-
+    
     The scatter plot with regression line reveals a strong positive correlation between total square footage and sale price. Larger homes tend to have higher sale prices, supporting our second hypothesis that size is a key determinant of property value.
     """)
 
@@ -1033,7 +1023,7 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-
+    
     The line plot shows an upward trend in sale prices with more recent remodeling years. This indicates that recent renovations contribute positively to the property's market value, validating our third hypothesis.
     """)
 
@@ -1051,7 +1041,7 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-
+    
     The scatter plot indicates that larger garage areas are associated with higher sale prices. Additionally, the quality of the garage finish enhances the property's value, confirming our fourth hypothesis.
     """)
 
@@ -1068,16 +1058,16 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-
+    
     The boxplot demonstrates that houses with higher kitchen quality ratings tend to have higher sale prices. This strong positive relationship validates our fifth hypothesis, highlighting the importance of kitchen quality in determining property value.
     """)
 
-    # FullBath vs SalePrice_original
-    st.write("#### SalePrice vs FullBath")
+    # OverallCond vs SalePrice_original
+    st.write("#### SalePrice vs OverallCond")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='FullBath', y='SalePrice', data=data_for_plotting, palette='Oranges')
-    plt.title('SalePrice vs Number of Full Bathrooms', fontsize=16)
-    plt.xlabel('Number of Full Bathrooms', fontsize=12)
+    sns.boxplot(x='OverallCond', y='SalePrice', data=data_for_plotting, palette='Oranges')
+    plt.title('SalePrice vs Overall Condition', fontsize=16)
+    plt.xlabel('Overall Condition', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
@@ -1085,8 +1075,8 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-
-    The boxplot shows that houses with more full bathrooms generally have higher sale prices. This supports our sixth hypothesis, indicating that the number of full bathrooms is a significant factor influencing property value.
+    
+    The boxplot shows that houses with higher overall condition ratings generally have higher sale prices. This supports our sixth hypothesis, indicating that the overall condition of the house is a significant factor influencing property value.
     """)
 
     # BedroomAbvGr vs SalePrice_original
@@ -1103,7 +1093,7 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-
+    
     The boxplot indicates a positive trend where an increasing number of bedrooms above grade correlates with higher sale prices. This finding supports our seventh hypothesis.
     """)
 
@@ -1120,7 +1110,7 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-
+    
     The scatter plot shows that newer homes tend to have higher overall quality ratings, but there are high-quality older homes as well. This partially validates our eighth hypothesis.
     """)
 
@@ -1136,7 +1126,7 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-
+    
     There is a positive correlation between the size of the garage and the above-grade living area, supporting our ninth hypothesis.
     """)
 
@@ -1152,14 +1142,14 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-
+    
     The boxplot shows that higher overall quality ratings are associated with larger total square footage, validating our tenth hypothesis.
     """)
 
     st.write("""
     ### Summary of Hypothesis Validations
 
-    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, kitchen quality, number of full bathrooms, and the number of bedrooms above grade are significant determinants of house sale prices. Additionally, relationships between other features provide deeper insights into property characteristics. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
+    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, kitchen quality, overall condition, and the number of bedrooms above grade are significant determinants of house sale prices. Additionally, relationships between other features provide deeper insights into property characteristics. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
     """)
 
 # --------------------------- #
