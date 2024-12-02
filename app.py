@@ -610,10 +610,7 @@ with tab1:
     - Check the **Model Performance** tab for detailed insights into the model's accuracy and reliability.
 
     ### Acknowledgments
-    This project is based on the Ames Housing Dataset, which is a comprehensive compilation of property sale records. We acknowledge all contributors who have maintained and updated this valuable resource for real estate analysis.
-
-    ### Contact Information
-    For questions, feedback, or collaboration opportunities, please contact the project team at [email@example.com](mailto:email@example.com).
+    This project was developed by John Furlong with support from the Code Institute. We acknowledge the Code Institute for providing comprehensive course material, support staff, lectures, and resources that were instrumental in the completion of this project. The project is based on the Ames Housing Dataset, a comprehensive compilation of property sale records.
 
     ---
     """)
@@ -678,6 +675,58 @@ with tab2:
                 st.write("""
                 The pairplot above visualizes pairwise relationships between the top correlated features and the sale price. Sampling the data ensures quicker rendering while maintaining the overall trend insights.
                 """)
+        # New section: Feature Correlations Excluding OverallQual
+        st.write("### Feature Correlations Excluding OverallQual")
+        # Exclude 'OverallQual' from the data
+        data_for_corr_excl = data_for_corr.drop('OverallQual', axis=1)
+        # Compute correlation matrix
+        corr_matrix_excl = data_for_corr_excl.corr()
+        # Select features with high correlation (absolute value > 0.5) with 'SalePrice', excluding 'OverallQual'
+        top_corr_features_excl = corr_matrix_excl.index[abs(corr_matrix_excl['SalePrice']) > 0.5].tolist()
+        # Remove 'OverallQual' if it's in the list (shouldn't be, but just in case)
+        top_corr_features_excl = [feat for feat in top_corr_features_excl if feat != 'OverallQual']
+        if len(top_corr_features_excl) == 0:
+            st.warning("**Warning:** No features found with a correlation greater than 0.5 with 'SalePrice' after excluding 'OverallQual'.")
+        else:
+            st.write("""
+            ### Top Correlated Features with Sale Price (Excluding OverallQual)
+            The heatmap below shows the correlation coefficients between the sale price and other features, excluding `OverallQual`. This analysis helps in understanding the influence of other significant features on the sale price.
+            """)
+            # Plot correlation heatmap using original SalePrice
+            plt.figure(figsize=(12, 8))
+            sns.heatmap(data_for_corr_excl[top_corr_features_excl].corr(), annot=True, cmap='RdBu', linewidths=0.5, fmt=".2f")
+            plt.title('Correlation Heatmap of Top Features (Excluding OverallQual)', fontsize=16)
+            plt.xticks(rotation=45, ha='right')
+            plt.yticks(rotation=0)
+            st.pyplot(plt)
+            st.write("""
+            **Observations:**
+            - **GrLivArea:** Continues to show a strong positive correlation with sale price.
+            - **TotalSF:** Remains a significant predictor of sale price.
+            - **GarageArea:** Still positively correlated with sale price.
+            - **Qual_TotalSF:** The combined effect of quality and total square footage is significant even without considering `OverallQual` directly.
+            """)
+            # Interesting Relationships
+            st.write("### Interesting Relationships")
+            st.write("""
+            ### Unusual Correlations and Findings
+
+            During our analysis, we uncovered some intriguing and unexpected relationships between certain features and the sale price:
+
+            - **YearBuilt vs. SalePrice:** Surprisingly, the correlation between `YearBuilt` and sale price is moderate rather than strong. This suggests that newer homes are not always more valuable, possibly due to factors like architectural style or neighborhood prestige.
+
+            - **BedroomAbvGr vs. SalePrice:** The number of bedrooms above grade shows a weaker correlation with sale price than anticipated. This indicates that beyond a certain point, additional bedrooms do not significantly enhance the property's value.
+
+            - **EnclosedPorch vs. SalePrice:** Interestingly, the area of enclosed porches exhibits a slight negative correlation with sale price. This could reflect a market preference for open outdoor spaces over enclosed ones.
+
+            - **BsmtUnfSF vs. SalePrice:** Unfinished basement area does not contribute positively to the sale price, highlighting that buyers place more value on finished living spaces.
+
+            - **LotFrontage vs. SalePrice:** Despite expectations, lot frontage does not strongly correlate with sale price, suggesting that frontage alone is not a key value driver without considering other lot characteristics.
+
+            **Implications:**
+
+            These findings emphasize the importance of data-driven insights over assumptions. They suggest that while certain features may intuitively seem valuable, their actual impact on sale price can differ based on market dynamics and buyer preferences.
+            """)
     st.write("""
     ### Interpreting Correlations
     - **Feature Selection:** Highly correlated features are prioritized for model training to enhance predictive performance.
@@ -1130,67 +1179,6 @@ with tab5:
                         """)
                 else:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
-                # New section: Feature Correlations Excluding OverallQual
-                st.header("Feature Correlations Excluding OverallQual")
-                # Exclude 'OverallQual' from the data
-                data_for_corr_excl = data_for_corr.drop('OverallQual', axis=1)
-                # Compute correlation matrix
-                corr_matrix_excl = data_for_corr_excl.corr()
-                # Select features with high correlation (absolute value > 0.5) with 'SalePrice', excluding 'OverallQual'
-                top_corr_features_excl = corr_matrix_excl.index[abs(corr_matrix_excl['SalePrice']) > 0.5].tolist()
-                # Remove 'OverallQual' if it's in the list (shouldn't be, but just in case)
-                top_corr_features_excl = [feat for feat in top_corr_features_excl if feat != 'OverallQual']
-                if len(top_corr_features_excl) == 0:
-                    st.warning("**Warning:** No features found with a correlation greater than 0.5 with 'SalePrice' after excluding 'OverallQual'.")
-                else:
-                    st.write("""
-                    ### Top Correlated Features with Sale Price (Excluding OverallQual)
-                    The heatmap below shows the correlation coefficients between the sale price and other features, excluding `OverallQual`. This analysis helps in understanding the influence of other significant features on the sale price.
-                    """)
-                    # Plot correlation heatmap using original SalePrice
-                    plt.figure(figsize=(12, 8))
-                    sns.heatmap(data_for_corr_excl[top_corr_features_excl].corr(), annot=True, cmap='RdBu', linewidths=0.5, fmt=".2f")
-                    plt.title('Correlation Heatmap of Top Features (Excluding OverallQual)', fontsize=16)
-                    plt.xticks(rotation=45, ha='right')
-                    plt.yticks(rotation=0)
-                    st.pyplot(plt)
-                    st.write("""
-                    **Observations:**
-                    - **GrLivArea:** Continues to show a strong positive correlation with sale price.
-                    - **TotalSF:** Remains a significant predictor of sale price.
-                    - **GarageArea:** Still positively correlated with sale price.
-                    - **Qual_TotalSF:** The combined effect of quality and total square footage is significant even without considering `OverallQual` directly.
-                    """)
-                # Interesting Relationships
-                st.header("Interesting Relationships")
-                st.write("""
-                ### Unusual Correlations and Findings
-
-                During our analysis, we uncovered some intriguing and unexpected relationships between certain features and the sale price:
-
-                - **YearBuilt vs. SalePrice:** Surprisingly, the correlation between `YearBuilt` and sale price is moderate rather than strong. This suggests that newer homes are not always more valuable, possibly due to factors like architectural style or neighborhood prestige.
-
-                - **BedroomAbvGr vs. SalePrice:** The number of bedrooms above grade shows a weaker correlation with sale price than anticipated. This indicates that beyond a certain point, additional bedrooms do not significantly enhance the property's value.
-
-                - **EnclosedPorch vs. SalePrice:** Interestingly, the area of enclosed porches exhibits a slight negative correlation with sale price. This could reflect a market preference for open outdoor spaces over enclosed ones.
-
-                - **BsmtUnfSF vs. SalePrice:** Unfinished basement area does not contribute positively to the sale price, highlighting that buyers place more value on finished living spaces.
-
-                - **LotFrontage vs. SalePrice:** Despite expectations, lot frontage does not strongly correlate with sale price, suggesting that frontage alone is not a key value driver without considering other lot characteristics.
-
-                **Implications:**
-
-                These findings emphasize the importance of data-driven insights over assumptions. They suggest that while certain features may intuitively seem valuable, their actual impact on sale price can differ based on market dynamics and buyer preferences.
-                """)
-                st.write("""
-                ### Conclusion
-                The comprehensive evaluation of our regression models underscores the effectiveness of our predictive pipeline. By meticulously preprocessing data, engineering relevant features, and selecting robust models, we've achieved high prediction accuracy and reliability. The insights derived from feature importance and correlation analyses further validate our approach, ensuring that the dashboard provides meaningful and actionable information to its users.
-                **Next Steps:**
-                - **Data Enrichment:** Incorporate additional features such as geographical location, proximity to amenities, and economic indicators to enhance model performance.
-                - **Model Expansion:** Explore and integrate more sophisticated models or ensemble techniques to capture complex data patterns.
-                - **User Feedback:** Gather feedback from users to identify areas of improvement and potential new features for the dashboard.
-                - **Continuous Monitoring:** Implement mechanisms to monitor model performance over time, ensuring sustained accuracy and relevance.
-                """)
 # --------------------------- #
 #          End of App          #
 # --------------------------- #
