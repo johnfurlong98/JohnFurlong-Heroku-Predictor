@@ -931,6 +931,19 @@ with tab4:
     - **Rationale:** More bedrooms can accommodate larger families, increasing the property's appeal to potential buyers.
     - **Validation:** The `BedroomAbvGr` feature shows a positive correlation with the sale price, supporting this hypothesis.
     """)
+    # Additional Hypotheses on Other Correlations
+    st.write("""
+    **Hypothesis 8:** *Older homes might have higher craftsmanship, impacting overall quality.*
+    
+    - **Rationale:** Some older homes may feature architectural designs and craftsmanship that are highly valued.
+    - **Validation:** Analyzing `YearBuilt` against `OverallQual` can reveal if older homes have higher quality ratings.
+    """)
+    st.write("""
+    **Hypothesis 9:** *Garage size is positively correlated with living area.*
+    
+    - **Rationale:** Larger homes often come with larger garages to accommodate more vehicles or storage.
+    - **Validation:** Investigate the relationship between `GarageArea` and `GrLivArea`.
+    """)
     # Visualization for Hypotheses
     st.write("### Visualization of Hypotheses")
     # OverallQual vs SalePrice_original
@@ -1016,11 +1029,13 @@ with tab4:
     
     The positive relationship between lot area and sale price is evident from the scatter plot. Larger lots provide more outdoor space and potential for future expansions, thereby increasing the property's appeal and market value. This supports our fifth hypothesis regarding the importance of lot size and frontage in determining house prices.
     """)
-    # KitchenQual vs SalePrice_original
+    # KitchenQual vs SalePrice_original - Fixed Visualization
     st.write("#### SalePrice vs KitchenQual")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_corr, palette='Pastel1')  # Using original SalePrice
-    plt.title('SalePrice vs KitchenQual', fontsize=16)
+    # Ensure KitchenQual is categorical and ordered
+    data_for_corr['KitchenQual'] = pd.Categorical(data_for_corr['KitchenQual'], categories=['Po', 'Fa', 'TA', 'Gd', 'Ex'], ordered=True)
+    sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_corr, palette='Pastel1', order=['Po', 'Fa', 'TA', 'Gd', 'Ex'])  # Using original SalePrice
+    plt.title('SalePrice vs Kitchen Quality', fontsize=16)
     plt.xlabel('Kitchen Quality', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
@@ -1036,7 +1051,7 @@ with tab4:
     st.write("#### SalePrice vs BedroomAbvGr")
     plt.figure(figsize=(10, 6))
     sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data_for_corr, palette='Set3')  # Using original SalePrice
-    plt.title('SalePrice vs BedroomAbvGr', fontsize=16)
+    plt.title('SalePrice vs Bedrooms Above Grade', fontsize=16)
     plt.xlabel('Bedrooms Above Grade', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
@@ -1048,9 +1063,39 @@ with tab4:
     
     The boxplot indicates a positive trend where an increasing number of bedrooms above grade correlates with higher sale prices. This finding supports our seventh hypothesis, demonstrating that more bedrooms enhance the property's appeal and market value.
     """)
+    # Additional Visualizations for New Hypotheses
+    # YearBuilt vs OverallQual
+    st.write("#### OverallQual vs YearBuilt")
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x='YearBuilt', y='OverallQual', data=data_for_corr, palette='coolwarm', alpha=0.6)
+    plt.title('Overall Quality vs Year Built', fontsize=16)
+    plt.xlabel('Year Built', fontsize=12)
+    plt.ylabel('Overall Quality', fontsize=12)
+    plt.tight_layout()
+    st.pyplot(plt)
+    st.write("""
+    **Conclusion:**
+    
+    The scatter plot shows that newer homes tend to have higher overall quality ratings, but the relationship is not strictly linear. This partially supports our eighth hypothesis, suggesting that while newer homes may use modern materials and designs, older homes can also possess high-quality craftsmanship.
+    """)
+    # GarageArea vs GrLivArea
+    st.write("#### GarageArea vs GrLivArea")
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x='GrLivArea', y='GarageArea', data=data_for_corr, hue='OverallQual', palette='viridis', alpha=0.6)
+    plt.title('Garage Area vs Above Grade Living Area', fontsize=16)
+    plt.xlabel('Above Grade Living Area (sq ft)', fontsize=12)
+    plt.ylabel('Garage Area (sq ft)', fontsize=12)
+    plt.legend(title='Overall Quality', bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    st.pyplot(plt)
+    st.write("""
+    **Conclusion:**
+    
+    There is a positive correlation between the size of the garage and the above-grade living area, supporting our ninth hypothesis. Larger homes typically have larger garages, indicating a relationship between overall house size and garage size.
+    """)
     st.write("""
     ### Summary of Hypothesis Validations
-    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, lot size, kitchen quality, and the number of bedrooms above grade are significant determinants of house sale prices. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
+    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, lot size, kitchen quality, and the number of bedrooms above grade are significant determinants of house sale prices. Additionally, relationships between other features like garage size and living area provide deeper insights into property characteristics. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
     """)
 # --------------------------- #
 #    Model Performance Tab     #
