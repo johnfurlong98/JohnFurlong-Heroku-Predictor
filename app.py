@@ -131,6 +131,8 @@ def load_models():
     
     try:
         skewed_features = pickle.load(open(skewed_features_path, 'rb'))
+        # Remove 'SalePrice' if present
+        skewed_features = [feat for feat in skewed_features if feat != 'SalePrice']
     except Exception as e:
         st.error(f"**Error loading skewed_features.pkl:** {e}")
         st.stop()
@@ -286,8 +288,8 @@ def preprocess_data(df, data_reference=None):
 # Load data
 data, inherited_houses = load_data()
 
-# Create a copy of the original SalePrice before preprocessing for visualization
-data_original = data[['SalePrice']].copy()
+# Create a copy of the original data before preprocessing for visualization
+data_original = data.copy()
 
 # Load models and related data
 (models, scaler, selected_features, skewed_features, lam_dict, 
@@ -651,7 +653,10 @@ with tab2:
     """)
 
     # Prepare data for correlation using original SalePrice
-    data_for_corr = pd.concat([data.drop('SalePrice', axis=1), data_original], axis=1)
+    data_for_corr = data_original.copy()
+
+    # Add necessary features for correlation
+    data_for_corr = data_for_corr.join(data.drop('SalePrice', axis=1))
 
     # Compute correlation matrix
     corr_matrix = data_for_corr.corr()
@@ -894,17 +899,19 @@ with tab4:
     # Create a separate DataFrame for plotting with original values
     data_for_plotting = data_original.copy()
 
-    # Add necessary features for plotting
-    data_for_plotting['BedroomAbvGr'] = data['BedroomAbvGr']
-    data_for_plotting['GrLivArea'] = data['GrLivArea']
-    data_for_plotting['OverallQual'] = data['OverallQual']
-    data_for_plotting['YearRemodAdd'] = data['YearRemodAdd']
-    data_for_plotting['GarageArea'] = data['GarageArea']
-    data_for_plotting['GarageFinish'] = data['GarageFinish']
-    data_for_plotting['YearBuilt'] = data['YearBuilt']
-    data_for_plotting['KitchenQual'] = data['KitchenQual']
-    data_for_plotting['TotalSF'] = data['TotalSF']
-    data_for_plotting['OverallCond'] = data['OverallCond']
+    # Add necessary features for plotting from the original data
+    features_to_add = ['BedroomAbvGr', 'GrLivArea', 'OverallQual', 'YearRemodAdd',
+                       'GarageArea', 'GarageFinish', 'YearBuilt', 'KitchenQual',
+                       'TotalBsmtSF', '1stFlrSF', '2ndFlrSF', 'OverallCond']
+    for feature in features_to_add:
+        data_for_plotting[feature] = data_original[feature]
+
+    # Recalculate 'TotalSF' and 'Qual_TotalSF' using original data
+    data_for_plotting['TotalSF'] = data_for_plotting['TotalBsmtSF'] + data_for_plotting['1stFlrSF'] + data_for_plotting['2ndFlrSF']
+    data_for_plotting['Qual_TotalSF'] = data_for_plotting['OverallQual'] * data_for_plotting['TotalSF']
+
+    # Map ordinal features for plotting purposes
+    # Since 'KitchenQual' in original data has categorical values, we can use them directly
 
     # Primary Hypotheses
     st.subheader("Primary Hypotheses")
@@ -979,7 +986,7 @@ with tab4:
     # OverallQual vs SalePrice_original
     st.write("#### SalePrice vs OverallQual")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='OverallQual', y='SalePrice', data=data_for_corr, palette='Set2')
+    sns.boxplot(x='OverallQual', y='SalePrice', data=data_for_plotting, palette='Set2')
     plt.title('SalePrice vs Overall Quality', fontsize=16)
     plt.xlabel('Overall Quality', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
@@ -996,7 +1003,7 @@ with tab4:
     # TotalSF vs SalePrice_original
     st.write("#### SalePrice vs TotalSF")
     plt.figure(figsize=(10, 6))
-    sns.regplot(x='TotalSF', y='SalePrice', data=data_for_corr, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
+    sns.regplot(x='TotalSF', y='SalePrice', data=data_for_plotting, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
     plt.title('SalePrice vs Total Square Footage', fontsize=16)
     plt.xlabel('Total Square Footage', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
@@ -1013,7 +1020,7 @@ with tab4:
     # YearRemodAdd vs SalePrice_original
     st.write("#### SalePrice vs YearRemodeled")
     plt.figure(figsize=(10, 6))
-    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data_for_corr, color='green', ci=None)
+    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data_for_plotting, color='green', ci=None)
     plt.title('SalePrice vs Year Remodeled', fontsize=16)
     plt.xlabel('Year Remodeled', fontsize=12)
     plt.ylabel('Average Sale Price (USD)', fontsize=12)
@@ -1030,7 +1037,7 @@ with tab4:
     # GarageArea vs SalePrice_original
     st.write("#### SalePrice vs GarageArea")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='GarageArea', y='SalePrice', data=data_for_corr, hue='GarageFinish', palette='viridis', alpha=0.6)
+    sns.scatterplot(x='GarageArea', y='SalePrice', data=data_for_plotting, hue='GarageFinish', palette='viridis', alpha=0.6)
     plt.title('SalePrice vs Garage Area', fontsize=16)
     plt.xlabel('Garage Area (sq ft)', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
@@ -1048,7 +1055,7 @@ with tab4:
     # KitchenQual vs SalePrice_original
     st.write("#### SalePrice vs KitchenQual")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_plotting, palette='Blues')
+    sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_plotting, palette='Blues', order=['Po', 'Fa', 'TA', 'Gd', 'Ex'])
     plt.title('SalePrice vs Kitchen Quality', fontsize=16)
     plt.xlabel('Kitchen Quality', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
@@ -1082,12 +1089,12 @@ with tab4:
     # BedroomAbvGr vs SalePrice_original
     st.write("#### SalePrice vs BedroomAbvGr")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data_for_corr, palette='Set3')
+    sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data_for_plotting, palette='Set3')
     plt.title('SalePrice vs Bedrooms Above Grade', fontsize=16)
     plt.xlabel('Bedrooms Above Grade', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
-    plt.ylim(0, data_for_corr['SalePrice'].quantile(0.95))  # Exclude extreme outliers
+    plt.ylim(0, data_for_plotting['SalePrice'].quantile(0.95))  # Exclude extreme outliers
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
 
@@ -1101,7 +1108,7 @@ with tab4:
     # YearBuilt vs OverallQual
     st.write("#### OverallQual vs YearBuilt")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='YearBuilt', y='OverallQual', data=data_for_corr, alpha=0.6)
+    sns.scatterplot(x='YearBuilt', y='OverallQual', data=data_for_plotting, alpha=0.6)
     plt.title('Overall Quality vs Year Built', fontsize=16)
     plt.xlabel('Year Built', fontsize=12)
     plt.ylabel('Overall Quality', fontsize=12)
@@ -1117,7 +1124,7 @@ with tab4:
     # GarageArea vs GrLivArea
     st.write("#### GarageArea vs GrLivArea")
     plt.figure(figsize=(10, 6))
-    sns.regplot(x='GrLivArea', y='GarageArea', data=data_for_corr, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
+    sns.regplot(x='GrLivArea', y='GarageArea', data=data_for_plotting, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
     plt.title('Garage Area vs Above Grade Living Area', fontsize=16)
     plt.xlabel('Above Grade Living Area (sq ft)', fontsize=12)
     plt.ylabel('Garage Area (sq ft)', fontsize=12)
@@ -1133,7 +1140,7 @@ with tab4:
     # OverallQual vs TotalSF
     st.write("#### OverallQual vs TotalSF")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='OverallQual', y='TotalSF', data=data_for_corr, palette='coolwarm')
+    sns.boxplot(x='OverallQual', y='TotalSF', data=data_for_plotting, palette='coolwarm')
     plt.title('Total Square Footage vs Overall Quality', fontsize=16)
     plt.xlabel('Overall Quality', fontsize=12)
     plt.ylabel('Total Square Footage', fontsize=12)
@@ -1281,45 +1288,39 @@ with tab5:
                 else:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
 
-                # Add Residual Analysis Section
-                st.header("Residual Analysis")
-            st.write("""
-            ### Residual Plot of the Best Model
-            The residual plot helps in diagnosing the performance of the regression model by visualizing the differences between the actual and predicted values.
-            """)
-            try:
+                # Remove Residual Analysis and Replace with Predicted vs Actual Plot
+                st.header("Predicted vs Actual Sale Prices")
+                st.write("""
+                ### Predicted vs Actual Sale Prices Plot
+                The plot below shows how well the model's predictions align with the actual sale prices in the test dataset.
+                """)
+                try:
                     # Access train_test_data using indices because it's a tuple
                     X_train = train_test_data[0]
                     X_test = train_test_data[1]
                     y_train = train_test_data[2]
                     y_test = train_test_data[3]
-                    #Predict on the test set
+                    # Predict on the test set
                     y_pred_log = models[best_model_name].predict(X_test)
                     y_pred = np.expm1(y_pred_log)
                     y_actual = np.expm1(y_test)
-                    residuals = y_actual - y_pred
                     plt.figure(figsize=(10, 6))
-                    plt.scatter(y_pred, residuals, alpha=0.6)
-                    plt.title('Residuals vs Predicted Values', fontsize=16)
-                    plt.xlabel('Predicted Sale Price (USD)', fontsize=12)
-                    plt.ylabel('Residuals (Actual - Predicted)', fontsize=12)
-                    plt.axhline(y=0, color='red', linestyle='--')
+                    plt.scatter(y_actual, y_pred, alpha=0.6)
+                    plt.plot([y_actual.min(), y_actual.max()], [y_actual.min(), y_actual.max()], 'r--')
+                    plt.title('Predicted vs Actual Sale Prices', fontsize=16)
+                    plt.xlabel('Actual Sale Price (USD)', fontsize=12)
+                    plt.ylabel('Predicted Sale Price (USD)', fontsize=12)
                     plt.tight_layout()
                     plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
                     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
                     st.pyplot(plt)
                     st.write("""
                     **Interpretation:**
-                    - The residuals are fairly randomly dispersed around zero, indicating a good fit.
-                    - No obvious patterns suggest that the model's assumptions are reasonable.
+                    - The closer the points are to the red dashed line (where predicted equals actual), the better the model's performance.
+                    - The plot shows that the model predicts sale prices that are generally close to the actual values.
                     """)
-            except Exception as e:
-                    st.error(f"**Error during residual analysis:** {e}")
-
-# --------------------------- #
-#          End of App          #
-# --------------------------- #
-
+                except Exception as e:
+                    st.error(f"**Error during plotting Predicted vs Actual Sale Prices:** {e}")
 
 # --------------------------- #
 #          End of App          #
