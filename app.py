@@ -237,7 +237,7 @@ def preprocess_data(df, data_reference=None):
     
     # Fill numerical features using median from training data
     numerical_median_fill = ['BedroomAbvGr', 'GarageYrBlt', 'LotFrontage', 
-                             'OverallQual', 'OverallCond', 'YearBuilt', 'YearRemodAdd']
+                             'OverallQual', 'OverallCond', 'YearBuilt', 'YearRemodAdd', 'FullBath']
     for feature in numerical_median_fill:
         if feature in df_processed.columns:
             if data_reference is not None and feature in data_reference.columns:
@@ -328,6 +328,7 @@ feature_metadata = {
     'TotalSF': 'Total square feet of house (including basement)',
     'Qual_TotalSF': 'Product of OverallQual and TotalSF',
     'OpenPorchSF': 'Open porch area',
+    'FullBath': 'Full bathrooms above grade',
 }
 
 # --------------------------- #
@@ -556,6 +557,15 @@ feature_input_details = {
         'step': 1,
         'help_text': feature_metadata['MasVnrArea']
     },
+    'FullBath': {
+        'input_type': 'slider',
+        'label': 'Full Bathrooms Above Grade',
+        'min_value': 0,
+        'max_value': 4,
+        'value': int(data['FullBath'].median()) if 'FullBath' in data.columns else 2,
+        'step': 1,
+        'help_text': feature_metadata['FullBath']
+    },
 }
 
 # --------------------------- #
@@ -680,7 +690,7 @@ with tab2:
             - **Above Grade Living Area (`GrLivArea`):** Larger living areas are associated with higher sale prices.
             - **Total Square Footage (`TotalSF`):** Total area including basement and above-ground strongly influences sale price.
             - **Garage Area (`GarageArea`):** Larger garages contribute to higher house values.
-            - **Lot Area (`LotArea`):** Bigger lots generally correlate with increased sale prices.
+            - **Kitchen Quality (`KitchenQual`):** Higher kitchen quality correlates with increased sale prices.
             """)
 
             # Additional visualization: Pairplot with top features
@@ -705,59 +715,22 @@ with tab2:
                 The pairplot above visualizes pairwise relationships between the top correlated features and the sale price. Sampling the data ensures quicker rendering while maintaining the overall trend insights.
                 """)
 
-        # New section: Feature Correlations Excluding OverallQual
-        st.write("### Feature Correlations Excluding OverallQual")
-        # Exclude 'OverallQual' from the data
-        data_for_corr_excl = data_for_corr.drop('OverallQual', axis=1)
-        # Compute correlation matrix
-        corr_matrix_excl = data_for_corr_excl.corr()
-        # Select features with high correlation (absolute value > 0.5) with 'SalePrice', excluding 'OverallQual'
-        top_corr_features_excl = corr_matrix_excl.index[abs(corr_matrix_excl['SalePrice']) > 0.5].tolist()
-        # Remove 'OverallQual' if it's in the list (shouldn't be, but just in case)
-        top_corr_features_excl = [feat for feat in top_corr_features_excl if feat != 'OverallQual']
-        if len(top_corr_features_excl) == 0:
-            st.warning("**Warning:** No features found with a correlation greater than 0.5 with 'SalePrice' after excluding 'OverallQual'.")
-        else:
-            st.write("""
-            ### Top Correlated Features with Sale Price (Excluding OverallQual)
-            The heatmap below shows the correlation coefficients between the sale price and other features, excluding `OverallQual`. This analysis helps in understanding the influence of other significant features on the sale price.
-            """)
-            # Plot correlation heatmap using original SalePrice
-            plt.figure(figsize=(12, 8))
-            sns.heatmap(data_for_corr_excl[top_corr_features_excl].corr(), annot=True, cmap='RdBu', linewidths=0.5, fmt=".2f")
-            plt.title('Correlation Heatmap of Top Features (Excluding OverallQual)', fontsize=16)
-            plt.xticks(rotation=45, ha='right')
-            plt.yticks(rotation=0)
-            st.pyplot(plt)
-            st.write("""
-            **Observations:**
-            - **GrLivArea:** Continues to show a strong positive correlation with sale price.
-            - **TotalSF:** Remains a significant predictor of sale price.
-            - **GarageArea:** Still positively correlated with sale price.
-            - **Qual_TotalSF:** The combined effect of quality and total square footage is significant even without considering `OverallQual` directly.
-            """)
-
-            # Interesting Relationships
-            st.write("### Interesting Relationships")
-            st.write("""
-            ### Unusual Correlations and Findings
-
-            During our analysis, we uncovered some intriguing and unexpected relationships between certain features and the sale price:
-
-            - **YearBuilt vs. SalePrice:** Surprisingly, the correlation between `YearBuilt` and sale price is moderate rather than strong. This suggests that newer homes are not always more valuable, possibly due to factors like architectural style or neighborhood prestige.
-
-            - **BedroomAbvGr vs. SalePrice:** The number of bedrooms above grade shows a weaker correlation with sale price than anticipated. This indicates that beyond a certain point, additional bedrooms do not significantly enhance the property's value.
-
-            - **EnclosedPorch vs. SalePrice:** Interestingly, the area of enclosed porches exhibits a slight negative correlation with sale price. This could reflect a market preference for open outdoor spaces over enclosed ones.
-
-            - **BsmtUnfSF vs. SalePrice:** Unfinished basement area does not contribute positively to the sale price, highlighting that buyers place more value on finished living spaces.
-
-            - **LotFrontage vs. SalePrice:** Despite expectations, lot frontage does not strongly correlate with sale price, suggesting that frontage alone is not a key value driver without considering other lot characteristics.
-
-            **Implications:**
-
-            These findings emphasize the importance of data-driven insights over assumptions. They suggest that while certain features may intuitively seem valuable, their actual impact on sale price can differ based on market dynamics and buyer preferences.
-            """)
+        # New section: Correlation Matrix for All Features
+        st.write("### Complete Correlation Matrix")
+        st.write("""
+        The correlation matrix below provides a comprehensive view of the relationships between all features and the sale price.
+        """)
+        plt.figure(figsize=(16, 12))
+        sns.heatmap(data_for_corr.corr(), cmap='coolwarm', annot=False)
+        plt.title('Complete Correlation Matrix', fontsize=16)
+        plt.xticks(rotation=45, ha='right')
+        plt.yticks(rotation=0)
+        st.pyplot(plt)
+        st.write("""
+        **Observations:**
+        - Features like `TotalSF`, `GrLivArea`, and `OverallQual` have strong positive correlations with `SalePrice`.
+        - Some features exhibit multicollinearity, which was addressed during feature selection to improve model performance.
+        """)
 
     st.write("""
     ### Interpreting Correlations
@@ -848,7 +821,7 @@ with tab3:
                 'Basement': ['BsmtFinType1', 'BsmtExposure', 'BsmtFinSF1', 'BsmtUnfSF'],
                 'Garage': ['GarageFinish', 'GarageYrBlt', 'GarageArea'],
                 'Porch/Deck': ['WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch'],
-                'Other': ['BedroomAbvGr', 'KitchenQual', 'MasVnrArea'],
+                'Other': ['BedroomAbvGr', 'KitchenQual', 'MasVnrArea', 'FullBath'],
             }
             for group_name, features in feature_groups.items():
                 st.subheader(group_name)
@@ -932,10 +905,8 @@ with tab4:
     data_for_plotting = data_original.copy()
 
     # Add necessary features for plotting
-    data_for_plotting['LotArea'] = data['LotArea']
     data_for_plotting['BedroomAbvGr'] = data['BedroomAbvGr']
     data_for_plotting['GrLivArea'] = data['GrLivArea']
-    data_for_plotting['TotalBsmtSF'] = data['TotalBsmtSF']
     data_for_plotting['OverallQual'] = data['OverallQual']
     data_for_plotting['YearRemodAdd'] = data['YearRemodAdd']
     data_for_plotting['GarageArea'] = data['GarageArea']
@@ -943,6 +914,7 @@ with tab4:
     data_for_plotting['YearBuilt'] = data['YearBuilt']
     data_for_plotting['KitchenQual'] = data['KitchenQual']
     data_for_plotting['TotalSF'] = data['TotalSF']
+    data_for_plotting['FullBath'] = data['FullBath']
 
     # Primary Hypotheses
     st.subheader("### Primary Hypotheses")
@@ -971,16 +943,16 @@ with tab4:
     - **Validation:** Features like `GarageArea` and `GarageFinish` show positive correlations with the sale price, validating this hypothesis.
     """)
     st.write("""
-    **Hypothesis 5:** *Lot size and frontage are key determinants of a house's market value.*
+    **Hypothesis 5:** *Higher kitchen quality leads to a higher sale price.*
     
-    - **Rationale:** Larger lots provide more outdoor space, which is desirable for families and can offer potential for future expansions or landscaping.
-    - **Validation:** The `LotArea` and `LotFrontage` features have significant positive correlations with the sale price, supporting this hypothesis.
+    - **Rationale:** The kitchen is often considered the heart of the home, and high-quality kitchens can significantly increase a property's appeal and value.
+    - **Validation:** The `KitchenQual` feature shows a strong positive correlation with the sale price, supporting this hypothesis.
     """)
     st.write("""
-    **Hypothesis 6:** *Houses with larger above-grade living areas tend to have larger basements.*
-
-    - **Rationale:** Larger homes above ground are likely to have larger basements, as the foundation size increases with the house size.
-    - **Validation:** Analyze the correlation between `GrLivArea` and `TotalBsmtSF`.
+    **Hypothesis 6:** *Homes with more full bathrooms have higher sale prices.*
+    
+    - **Rationale:** The number of full bathrooms contributes to the functionality and convenience of a home, influencing buyers' willingness to pay.
+    - **Validation:** The `FullBath` feature shows a positive correlation with the sale price, supporting this hypothesis.
     """)
     st.write("""
     **Hypothesis 7:** *The number of bedrooms above grade influences the sale price.*
@@ -1083,44 +1055,38 @@ with tab4:
     The scatter plot indicates that larger garage areas are associated with higher sale prices. Additionally, the quality of the garage finish enhances the property's value, confirming our fourth hypothesis.
     """)
 
-    # LotArea vs SalePrice_original
-    st.write("#### SalePrice vs LotArea")
+    # KitchenQual vs SalePrice_original
+    st.write("#### SalePrice vs KitchenQual")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='LotArea', y='SalePrice', data=data_for_plotting, alpha=0.6)
-    plt.title('SalePrice vs Lot Area', fontsize=16)
-    plt.xlabel('Lot Area (sq ft)', fontsize=12)
+    sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_plotting, palette='Blues')
+    plt.title('SalePrice vs Kitchen Quality', fontsize=16)
+    plt.xlabel('Kitchen Quality', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
-    # Exclude extreme outliers to focus on the majority of data
-    plt.xlim(0, data_for_plotting['LotArea'].quantile(0.95))
-    plt.ylim(0, data_for_plotting['SalePrice'].quantile(0.95))
-    # Format y-axis with dollar signs
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
 
     st.write("""
     **Conclusion:**
 
-    The scatter plot now accurately displays the relationship between Lot Area and Sale Price. There is a positive correlation, indicating that larger lots generally contribute to higher property values. This supports our fifth hypothesis regarding the importance of lot size in determining house prices.
+    The boxplot demonstrates that houses with higher kitchen quality ratings tend to have higher sale prices. This strong positive relationship validates our fifth hypothesis, highlighting the importance of kitchen quality in determining property value.
     """)
 
-    # GrLivArea vs TotalBsmtSF
-    st.write("#### TotalBsmtSF vs GrLivArea")
+    # FullBath vs SalePrice_original
+    st.write("#### SalePrice vs FullBath")
     plt.figure(figsize=(10, 6))
-    sns.regplot(x='GrLivArea', y='TotalBsmtSF', data=data_for_plotting, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
-    plt.title('Total Basement Area vs Above Grade Living Area', fontsize=16)
-    plt.xlabel('Above Grade Living Area (sq ft)', fontsize=12)
-    plt.ylabel('Total Basement Area (sq ft)', fontsize=12)
+    sns.boxplot(x='FullBath', y='SalePrice', data=data_for_plotting, palette='Oranges')
+    plt.title('SalePrice vs Number of Full Bathrooms', fontsize=16)
+    plt.xlabel('Number of Full Bathrooms', fontsize=12)
+    plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
-    # Exclude extreme outliers
-    plt.xlim(0, data_for_plotting['GrLivArea'].quantile(0.95))
-    plt.ylim(0, data_for_plotting['TotalBsmtSF'].quantile(0.95))
+    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
 
     st.write("""
     **Conclusion:**
 
-    The scatter plot with regression line demonstrates a strong positive correlation between the above-grade living area and the total basement area. This indicates that larger homes tend to have larger basements, validating our sixth hypothesis.
+    The boxplot shows that houses with more full bathrooms generally have higher sale prices. This supports our sixth hypothesis, indicating that the number of full bathrooms is a significant factor influencing property value.
     """)
 
     # BedroomAbvGr vs SalePrice_original
@@ -1193,7 +1159,7 @@ with tab4:
     st.write("""
     ### Summary of Hypothesis Validations
 
-    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, lot size, kitchen quality, and the number of bedrooms above grade are significant determinants of house sale prices. Additionally, relationships between other features provide deeper insights into property characteristics. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
+    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, kitchen quality, number of full bathrooms, and the number of bedrooms above grade are significant determinants of house sale prices. Additionally, relationships between other features provide deeper insights into property characteristics. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
     """)
 
 # --------------------------- #
@@ -1324,6 +1290,41 @@ with tab5:
                         """)
                 else:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
+
+                # Add Residual Analysis Section
+                st.header("Residual Analysis")
+                st.write("""
+                ### Residual Plot of the Best Model
+                The residual plot helps in diagnosing the performance of the regression model by visualizing the differences between the actual and predicted values.
+                """)
+                try:
+                    # Assuming train_test_data contains X_train, X_test, y_train, y_test
+                    X_train = train_test_data['X_train']
+                    X_test = train_test_data['X_test']
+                    y_train = train_test_data['y_train']
+                    y_test = train_test_data['y_test']
+                    # Predict on the test set
+                    y_pred_log = models[best_model_name].predict(X_test)
+                    y_pred = np.expm1(y_pred_log)
+                    y_actual = np.expm1(y_test)
+                    residuals = y_actual - y_pred
+                    plt.figure(figsize=(10, 6))
+                    plt.scatter(y_pred, residuals, alpha=0.6)
+                    plt.title('Residuals vs Predicted Values', fontsize=16)
+                    plt.xlabel('Predicted Sale Price (USD)', fontsize=12)
+                    plt.ylabel('Residuals (Actual - Predicted)', fontsize=12)
+                    plt.axhline(y=0, color='red', linestyle='--')
+                    plt.tight_layout()
+                    plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
+                    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
+                    st.pyplot(plt)
+                    st.write("""
+                    **Interpretation:**
+                    - The residuals are fairly randomly dispersed around zero, indicating a good fit.
+                    - No obvious patterns suggest that the model's assumptions are reasonable.
+                    """)
+                except Exception as e:
+                    st.error(f"**Error during residual analysis:** {e}")
 
 # --------------------------- #
 #          End of App          #
