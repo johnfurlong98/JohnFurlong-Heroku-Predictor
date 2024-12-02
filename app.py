@@ -8,12 +8,11 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import boxcox
-from scipy.special import inv_boxcox
 import pickle
 from pathlib import Path
 
 # --------------------------- #
-#       Configuration          #
+#       Configuration         #
 # --------------------------- #
 
 # Get the directory where the script is located
@@ -27,7 +26,7 @@ st.set_page_config(
 )
 
 # --------------------------- #
-#       Helper Functions       #
+#       Helper Functions      #
 # --------------------------- #
 
 def check_file_exists(file_path, description):
@@ -281,7 +280,7 @@ def preprocess_data(df, data_reference=None):
     return df_processed
 
 # --------------------------- #
-#       Load Data & Models     #
+#       Load Data & Models    #
 # --------------------------- #
 
 # Load data
@@ -298,7 +297,7 @@ data_original = data[['SalePrice']].copy()
 data = preprocess_data(data, data_reference=data)
 
 # --------------------------- #
-#       Feature Metadata       #
+#       Feature Metadata      #
 # --------------------------- #
 
 # Metadata for features (from the provided metadata)
@@ -328,7 +327,6 @@ feature_metadata = {
     'YearRemodAdd': 'Remodel date',
     'TotalSF': 'Total square feet of house (including basement)',
     'Qual_TotalSF': 'Product of OverallQual and TotalSF',
-    'OpenPorchSF': 'Open porch area',
 }
 
 # --------------------------- #
@@ -560,7 +558,7 @@ feature_input_details = {
 }
 
 # --------------------------- #
-#       Custom Styling         #
+#       Custom Styling        #
 # --------------------------- #
 
 # Apply custom CSS for enhanced UI (optional)
@@ -586,7 +584,7 @@ st.markdown(
 )
 
 # --------------------------- #
-#          Main App            #
+#          Main App           #
 # --------------------------- #
 
 # Create tabs for navigation
@@ -594,7 +592,7 @@ tabs = ["Project Summary", "Feature Correlations", "House Price Predictions", "P
 tab1, tab2, tab3, tab4, tab5 = st.tabs(tabs)
 
 # --------------------------- #
-#      Project Summary Tab     #
+#      Project Summary Tab    #
 # --------------------------- #
 
 with tab1:
@@ -641,7 +639,7 @@ with tab1:
     """)
 
 # --------------------------- #
-#    Feature Correlations Tab  #
+#    Feature Correlations Tab #
 # --------------------------- #
 
 with tab2:
@@ -882,7 +880,7 @@ with tab3:
     """)
 
 # --------------------------- #
-#      Project Hypotheses Tab  #
+#      Project Hypotheses Tab #
 # --------------------------- #
 
 with tab4:
@@ -1157,7 +1155,7 @@ with tab4:
     """)
 
 # --------------------------- #
-#    Model Performance Tab     #
+#    Model Performance Tab    #
 # --------------------------- #
 
 with tab5:
@@ -1284,41 +1282,6 @@ with tab5:
                         """)
                 else:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
-
-                # Add Residual Analysis Section
-                st.header("Residual Analysis")
-            st.write("""
-            ### Residual Plot of the Best Model
-            The residual plot helps in diagnosing the performance of the regression model by visualizing the differences between the actual and predicted values.
-            """)
-            try:
-                # Access train_test_data using indices because it's a tuple
-                X_train = train_test_data[0]
-                X_test = train_test_data[1]
-                y_train = train_test_data[2]
-                y_test = train_test_data[3]
-                # Predict on the test set
-                y_pred_log = models[best_model_name].predict(X_test)
-                y_pred = np.expm1(y_pred_log)
-                y_actual = np.expm1(y_test)
-                residuals = y_actual - y_pred
-                plt.figure(figsize=(10, 6))
-                plt.scatter(y_pred, residuals, alpha=0.6)
-                plt.title('Residuals vs Predicted Values', fontsize=16)
-                plt.xlabel('Predicted Sale Price (USD)', fontsize=12)
-                plt.ylabel('Residuals (Actual - Predicted)', fontsize=12)
-                plt.axhline(y=0, color='red', linestyle='--')
-                plt.tight_layout()
-                plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
-                plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
-                st.pyplot(plt)
-                st.write("""
-                **Interpretation:**
-                - The residuals are fairly randomly dispersed around zero, indicating a good fit.
-                - No obvious patterns suggest that the model's assumptions are reasonable.
-                """)
-            except Exception as e:
-                st.error(f"**Error during residual analysis:** {e}")
 
 # --------------------------- #
 #          End of App          #
