@@ -1,4 +1,5 @@
 # app.py
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,7 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import boxcox
-from scipy.special import inv_boxcox  # Added for inverse Box-Cox transformation
+from scipy.special import inv_boxcox
 import pickle
 from pathlib import Path
 
@@ -44,23 +45,23 @@ def load_data():
     """
     data_path = BASE_DIR / 'dashboard' / 'notebook' / 'raw_data' / 'house_prices_records.csv'
     inherited_houses_path = BASE_DIR / 'dashboard' / 'notebook' / 'raw_data' / 'inherited_houses.csv'
-    
+
     # Check if files exist
     check_file_exists(data_path, "house_prices_records.csv")
     check_file_exists(inherited_houses_path, "inherited_houses.csv")
-    
+
     try:
         data = pd.read_csv(data_path)
     except Exception as e:
         st.error(f"**Error loading house_prices_records.csv:** {e}")
         st.stop()
-    
+
     try:
         inherited_houses = pd.read_csv(inherited_houses_path)
     except Exception as e:
         st.error(f"**Error loading inherited_houses.csv:** {e}")
         st.stop()
-    
+
     return data, inherited_houses
 
 @st.cache_resource(show_spinner=False)
@@ -69,12 +70,12 @@ def load_models():
     Loads all necessary models and related objects.
     """
     models_dir = BASE_DIR / 'dashboard' / 'notebook' / 'data' / 'models'
-    
+
     # Check if models directory exists
     if not models_dir.exists():
         st.error(f"**Error:** The models directory was not found at `{models_dir}`.")
         st.stop()
-    
+
     models = {}
     model_files = {
         'Linear Regression': 'linear_regression_model.joblib',
@@ -84,7 +85,7 @@ def load_models():
         'Gradient Boosting': 'gradient_boosting_model.joblib',
         'Random Forest': 'random_forest_model.joblib'
     }
-    
+
     for name, filename in model_files.items():
         model_path = models_dir / filename
         check_file_exists(model_path, f"{filename}")
@@ -93,7 +94,7 @@ def load_models():
         except Exception as e:
             st.error(f"**Error loading {filename}:** {e}")
             st.stop()
-    
+
     # Load scaler and other related objects
     scaler_path = models_dir / 'scaler.joblib'
     selected_features_path = models_dir / 'selected_features.pkl'
@@ -102,7 +103,7 @@ def load_models():
     feature_importances_path = models_dir / 'feature_importances.csv'
     model_evaluation_path = models_dir / 'model_evaluation.csv'
     train_test_data_path = models_dir / 'train_test_data.joblib'
-    
+
     # Check if all necessary files exist
     required_files = {
         "scaler.joblib": scaler_path,
@@ -113,54 +114,52 @@ def load_models():
         "model_evaluation.csv": model_evaluation_path,
         "train_test_data.joblib": train_test_data_path
     }
-    
+
     for description, path in required_files.items():
         check_file_exists(path, description)
-    
+
     try:
         scaler = joblib.load(scaler_path)
     except Exception as e:
         st.error(f"**Error loading scaler.joblib:** {e}")
         st.stop()
-    
+
     try:
         selected_features = pickle.load(open(selected_features_path, 'rb'))
     except Exception as e:
         st.error(f"**Error loading selected_features.pkl:** {e}")
         st.stop()
-    
+
     try:
         skewed_features = pickle.load(open(skewed_features_path, 'rb'))
-        # Remove 'SalePrice' if present
-        skewed_features = [feat for feat in skewed_features if feat != 'SalePrice']
     except Exception as e:
         st.error(f"**Error loading skewed_features.pkl:** {e}")
         st.stop()
-    
+
     try:
         lam_dict = pickle.load(open(lam_dict_path, 'rb'))
     except Exception as e:
         st.error(f"**Error loading lam_dict.pkl:** {e}")
         st.stop()
-    
+
     try:
         feature_importances = pd.read_csv(feature_importances_path)
     except Exception as e:
         st.error(f"**Error loading feature_importances.csv:** {e}")
         st.stop()
-    
+
     try:
         model_evaluation = pd.read_csv(model_evaluation_path)
     except Exception as e:
         st.error(f"**Error loading model_evaluation.csv:** {e}")
         st.stop()
-    
+
     try:
         train_test_data = joblib.load(train_test_data_path)
     except Exception as e:
         st.error(f"**Error loading train_test_data.joblib:** {e}")
         st.stop()
-    
+
     return models, scaler, selected_features, skewed_features, lam_dict, feature_importances, model_evaluation, train_test_data
 
 @st.cache_data(show_spinner=False)
@@ -178,11 +177,11 @@ def preprocess_data(df, data_reference=None):
     """
     Preprocesses the input data by handling missing values, encoding categorical variables,
     and transforming skewed features.
-    
+
     **Note:** The 'SalePrice' is excluded from skewed feature transformations to preserve its original scale for visualization purposes.
     """
     df_processed = df.copy()
-    
+
     # Map full words back to codes
     user_to_model_mappings = {
         'BsmtFinType1': {
@@ -218,14 +217,14 @@ def preprocess_data(df, data_reference=None):
     for col, mapping in user_to_model_mappings.items():
         if col in df_processed.columns:
             df_processed[col] = df_processed[col].map(mapping)
-    
+
     # Handle missing values
     zero_fill_features = ['2ndFlrSF', 'EnclosedPorch', 'MasVnrArea', 'WoodDeckSF',
                           'BsmtFinSF1', 'TotalBsmtSF', '1stFlrSF', 'BsmtUnfSF']
     for feature in zero_fill_features:
         if feature in df_processed.columns:
             df_processed[feature] = df_processed[feature].fillna(0)
-    
+
     # Fill categorical features
     categorical_mode_fill = {
         'BsmtFinType1': 'None',
@@ -236,9 +235,9 @@ def preprocess_data(df, data_reference=None):
     for feature, value in categorical_mode_fill.items():
         if feature in df_processed.columns:
             df_processed[feature] = df_processed[feature].fillna(value)
-    
+
     # Fill numerical features using median from training data
-    numerical_median_fill = ['BedroomAbvGr', 'GarageYrBlt', 'LotFrontage', 
+    numerical_median_fill = ['BedroomAbvGr', 'GarageYrBlt', 'LotFrontage',
                              'OverallQual', 'OverallCond', 'YearBuilt', 'YearRemodAdd']
     for feature in numerical_median_fill:
         if feature in df_processed.columns:
@@ -247,7 +246,7 @@ def preprocess_data(df, data_reference=None):
             else:
                 median_value = df_processed[feature].median()
             df_processed[feature] = df_processed[feature].fillna(median_value)
-    
+
     # Encode categorical features
     ordinal_mappings = {
         'BsmtFinType1': {'None': 0, 'Unf': 1, 'LwQ': 2, 'Rec': 3, 'BLQ': 4, 'ALQ': 5, 'GLQ': 6},
@@ -258,10 +257,10 @@ def preprocess_data(df, data_reference=None):
     for col, mapping in ordinal_mappings.items():
         if col in df_processed.columns:
             df_processed[col] = df_processed[col].map(mapping)
-    
+
     # Feature engineering
     df_processed = feature_engineering(df_processed)
-    
+
     # Transform skewed features, excluding 'SalePrice' to preserve original scale for visualization
     for feat in skewed_features:
         if feat == 'SalePrice':
@@ -278,7 +277,7 @@ def preprocess_data(df, data_reference=None):
                         df_processed[feat] = np.log1p(df_processed[feat])
                 else:
                     df_processed[feat] = np.log1p(df_processed[feat])
-    
+
     return df_processed
 
 # --------------------------- #
@@ -288,11 +287,11 @@ def preprocess_data(df, data_reference=None):
 # Load data
 data, inherited_houses = load_data()
 
-# Create a copy of the original data before preprocessing for visualization
-data_original = data.copy()
+# Create a copy of the original SalePrice before preprocessing for visualization
+data_original = data[['SalePrice']].copy()
 
 # Load models and related data
-(models, scaler, selected_features, skewed_features, lam_dict, 
+(models, scaler, selected_features, skewed_features, lam_dict,
  feature_importances, model_evaluation, train_test_data) = load_models()
 
 # Preprocess the main data
@@ -653,10 +652,7 @@ with tab2:
     """)
 
     # Prepare data for correlation using original SalePrice
-    data_for_corr = data_original.copy()
-
-    # Add necessary features for correlation
-    data_for_corr = data_for_corr.join(data.drop('SalePrice', axis=1))
+    data_for_corr = pd.concat([data.drop('SalePrice', axis=1), data_original], axis=1)
 
     # Compute correlation matrix
     corr_matrix = data_for_corr.corr()
@@ -701,7 +697,7 @@ with tab2:
                     pairplot_data = data_for_corr[top_features + ['SalePrice']].sample(n=sample_size, random_state=42)
                 else:
                     pairplot_data = data_for_corr[top_features + ['SalePrice']]
-                
+
                 sns.set(style="ticks")
                 pairplot_fig = sns.pairplot(pairplot_data, diag_kind='kde', height=2.5)
                 plt.suptitle('Pairplot of Top Correlated Features', y=1.02)
@@ -899,61 +895,59 @@ with tab4:
     # Create a separate DataFrame for plotting with original values
     data_for_plotting = data_original.copy()
 
-    # Add necessary features for plotting from the original data
-    features_to_add = ['BedroomAbvGr', 'GrLivArea', 'OverallQual', 'YearRemodAdd',
-                       'GarageArea', 'GarageFinish', 'YearBuilt', 'KitchenQual',
-                       'TotalBsmtSF', '1stFlrSF', '2ndFlrSF', 'OverallCond']
-    for feature in features_to_add:
-        data_for_plotting[feature] = data_original[feature]
-
-    # Recalculate 'TotalSF' and 'Qual_TotalSF' using original data
-    data_for_plotting['TotalSF'] = data_for_plotting['TotalBsmtSF'] + data_for_plotting['1stFlrSF'] + data_for_plotting['2ndFlrSF']
-    data_for_plotting['Qual_TotalSF'] = data_for_plotting['OverallQual'] * data_for_plotting['TotalSF']
-
-    # Map ordinal features for plotting purposes
-    # Since 'KitchenQual' in original data has categorical values, we can use them directly
+    # Add necessary features for plotting
+    data_for_plotting['BedroomAbvGr'] = data['BedroomAbvGr']
+    data_for_plotting['GrLivArea'] = data['GrLivArea']
+    data_for_plotting['OverallQual'] = data['OverallQual']
+    data_for_plotting['YearRemodAdd'] = data['YearRemodAdd']
+    data_for_plotting['GarageArea'] = data['GarageArea']
+    data_for_plotting['GarageFinish'] = data['GarageFinish']
+    data_for_plotting['YearBuilt'] = data['YearBuilt']
+    data_for_plotting['KitchenQual'] = data['KitchenQual']
+    data_for_plotting['TotalSF'] = data['TotalSF']
+    data_for_plotting['OverallCond'] = data['OverallCond']
 
     # Primary Hypotheses
     st.subheader("Primary Hypotheses")
     st.write("""
     **Hypothesis 1:** *Higher overall quality of the house leads to a higher sale price.*
-    
+
     - **Rationale:** Quality metrics such as construction standards, materials used, and overall maintenance directly impact the desirability and value of a property.
     - **Validation:** The `OverallQual` feature shows a strong positive correlation with the sale price, confirming this hypothesis.
     """)
     st.write("""
     **Hypothesis 2:** *Larger living areas result in higher sale prices.*
-    
+
     - **Rationale:** Square footage is a fundamental indicator of a property's size and usability. Larger homes typically offer more living space, which is highly valued in the real estate market.
     - **Validation:** Features like `GrLivArea` and `TotalSF` have high correlations with the sale price, supporting this hypothesis.
     """)
     st.write("""
     **Hypothesis 3:** *Recent renovations positively impact the sale price.*
-    
+
     - **Rationale:** Modern updates and renovations can enhance a property's appeal, functionality, and energy efficiency, thereby increasing its market value.
     - **Validation:** The `YearRemodAdd` feature correlates with the sale price, indicating that more recent remodels can increase the house value.
     """)
     st.write("""
     **Hypothesis 4:** *The presence and quality of a garage significantly influence the sale price.*
-    
+
     - **Rationale:** Garages add convenience and storage space, enhancing the property's functionality. Higher-quality garages are often associated with better construction and maintenance.
     - **Validation:** Features like `GarageArea` and `GarageFinish` show positive correlations with the sale price, validating this hypothesis.
     """)
     st.write("""
     **Hypothesis 5:** *Higher kitchen quality leads to a higher sale price.*
-    
+
     - **Rationale:** The kitchen is often considered the heart of the home, and high-quality kitchens can significantly increase a property's appeal and value.
     - **Validation:** The `KitchenQual` feature shows a strong positive correlation with the sale price, supporting this hypothesis.
     """)
     st.write("""
     **Hypothesis 6:** *Houses with higher overall condition ratings have higher sale prices.*
-    
+
     - **Rationale:** The overall condition reflects the current state of the property, influencing buyers' perceptions and willingness to pay.
     - **Validation:** The `OverallCond` feature shows a positive correlation with the sale price, supporting this hypothesis.
     """)
     st.write("""
     **Hypothesis 7:** *The number of bedrooms above grade influences the sale price.*
-    
+
     - **Rationale:** More bedrooms can accommodate larger families, increasing the property's appeal to potential buyers.
     - **Validation:** The `BedroomAbvGr` feature shows a positive correlation with the sale price, supporting this hypothesis.
     """)
@@ -962,19 +956,19 @@ with tab4:
     st.subheader("### Additional Hypotheses on Feature Correlations")
     st.write("""
     **Hypothesis 8:** *Older homes may have higher overall quality due to superior craftsmanship.*
-    
+
     - **Rationale:** Some older homes are built with high-quality materials and craftsmanship that are highly valued.
     - **Validation:** Analyzing the relationship between `YearBuilt` and `OverallQual` can reveal trends in quality over time.
     """)
     st.write("""
     **Hypothesis 9:** *Garage size is positively correlated with the living area.*
-    
+
     - **Rationale:** Larger homes often come with larger garages, reflecting a consistent scale of property size.
     - **Validation:** Investigating the correlation between `GarageArea` and `GrLivArea` can confirm this relationship.
     """)
     st.write("""
     **Hypothesis 10:** *Properties with higher overall quality tend to have larger total square footage.*
-    
+
     - **Rationale:** Higher quality homes might also be larger, offering more space and amenities.
     - **Validation:** Examining the relationship between `OverallQual` and `TotalSF` can validate this hypothesis.
     """)
@@ -986,7 +980,7 @@ with tab4:
     # OverallQual vs SalePrice_original
     st.write("#### SalePrice vs OverallQual")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='OverallQual', y='SalePrice', data=data_for_plotting, palette='Set2')
+    sns.boxplot(x='OverallQual', y='SalePrice', data=data_for_corr, palette='Set2')
     plt.title('SalePrice vs Overall Quality', fontsize=16)
     plt.xlabel('Overall Quality', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
@@ -996,14 +990,14 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-    
+
     The boxplot illustrates a clear trend where houses with higher overall quality ratings command higher sale prices. This strong positive relationship validates our first hypothesis, emphasizing the significant impact of overall quality on property value.
     """)
 
     # TotalSF vs SalePrice_original
     st.write("#### SalePrice vs TotalSF")
     plt.figure(figsize=(10, 6))
-    sns.regplot(x='TotalSF', y='SalePrice', data=data_for_plotting, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
+    sns.regplot(x='TotalSF', y='SalePrice', data=data_for_corr, scatter_kws={'alpha': 0.5}, line_kws={'color': 'red'})
     plt.title('SalePrice vs Total Square Footage', fontsize=16)
     plt.xlabel('Total Square Footage', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
@@ -1013,14 +1007,14 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-    
+
     The scatter plot with regression line reveals a strong positive correlation between total square footage and sale price. Larger homes tend to have higher sale prices, supporting our second hypothesis that size is a key determinant of property value.
     """)
 
     # YearRemodAdd vs SalePrice_original
     st.write("#### SalePrice vs YearRemodeled")
     plt.figure(figsize=(10, 6))
-    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data_for_plotting, color='green', ci=None)
+    sns.lineplot(x='YearRemodAdd', y='SalePrice', data=data_for_corr, color='green', ci=None)
     plt.title('SalePrice vs Year Remodeled', fontsize=16)
     plt.xlabel('Year Remodeled', fontsize=12)
     plt.ylabel('Average Sale Price (USD)', fontsize=12)
@@ -1030,14 +1024,14 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-    
+
     The line plot shows an upward trend in sale prices with more recent remodeling years. This indicates that recent renovations contribute positively to the property's market value, validating our third hypothesis.
     """)
 
     # GarageArea vs SalePrice_original
     st.write("#### SalePrice vs GarageArea")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='GarageArea', y='SalePrice', data=data_for_plotting, hue='GarageFinish', palette='viridis', alpha=0.6)
+    sns.scatterplot(x='GarageArea', y='SalePrice', data=data_for_corr, hue='GarageFinish', palette='viridis', alpha=0.6)
     plt.title('SalePrice vs Garage Area', fontsize=16)
     plt.xlabel('Garage Area (sq ft)', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
@@ -1048,24 +1042,27 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-    
+
     The scatter plot indicates that larger garage areas are associated with higher sale prices. Additionally, the quality of the garage finish enhances the property's value, confirming our fourth hypothesis.
     """)
 
     # KitchenQual vs SalePrice_original
     st.write("#### SalePrice vs KitchenQual")
     plt.figure(figsize=(10, 6))
+    # Use the original 'KitchenQual' labels
     sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_plotting, palette='Blues', order=['Po', 'Fa', 'TA', 'Gd', 'Ex'])
     plt.title('SalePrice vs Kitchen Quality', fontsize=16)
     plt.xlabel('Kitchen Quality', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
+    # Map 'KitchenQual' codes to labels for x-axis
+    plt.xticks([0, 1, 2, 3, 4], ['Poor', 'Fair', 'Typical/Average', 'Good', 'Excellent'])
     st.pyplot(plt)
 
     st.write("""
     **Conclusion:**
-    
+
     The boxplot demonstrates that houses with higher kitchen quality ratings tend to have higher sale prices. This strong positive relationship validates our fifth hypothesis, highlighting the importance of kitchen quality in determining property value.
     """)
 
@@ -1082,25 +1079,25 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-    
+
     The boxplot shows that houses with higher overall condition ratings generally have higher sale prices. This supports our sixth hypothesis, indicating that the overall condition of the house is a significant factor influencing property value.
     """)
 
     # BedroomAbvGr vs SalePrice_original
     st.write("#### SalePrice vs BedroomAbvGr")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data_for_plotting, palette='Set3')
+    sns.boxplot(x='BedroomAbvGr', y='SalePrice', data=data_for_corr, palette='Set3')
     plt.title('SalePrice vs Bedrooms Above Grade', fontsize=16)
     plt.xlabel('Bedrooms Above Grade', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
-    plt.ylim(0, data_for_plotting['SalePrice'].quantile(0.95))  # Exclude extreme outliers
+    plt.ylim(0, data_for_corr['SalePrice'].quantile(0.95))  # Exclude extreme outliers
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
 
     st.write("""
     **Conclusion:**
-    
+
     The boxplot indicates a positive trend where an increasing number of bedrooms above grade correlates with higher sale prices. This finding supports our seventh hypothesis.
     """)
 
@@ -1108,7 +1105,7 @@ with tab4:
     # YearBuilt vs OverallQual
     st.write("#### OverallQual vs YearBuilt")
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='YearBuilt', y='OverallQual', data=data_for_plotting, alpha=0.6)
+    sns.scatterplot(x='YearBuilt', y='OverallQual', data=data_for_corr, alpha=0.6)
     plt.title('Overall Quality vs Year Built', fontsize=16)
     plt.xlabel('Year Built', fontsize=12)
     plt.ylabel('Overall Quality', fontsize=12)
@@ -1117,14 +1114,14 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-    
+
     The scatter plot shows that newer homes tend to have higher overall quality ratings, but there are high-quality older homes as well. This partially validates our eighth hypothesis.
     """)
 
     # GarageArea vs GrLivArea
     st.write("#### GarageArea vs GrLivArea")
     plt.figure(figsize=(10, 6))
-    sns.regplot(x='GrLivArea', y='GarageArea', data=data_for_plotting, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
+    sns.regplot(x='GrLivArea', y='GarageArea', data=data_for_corr, scatter_kws={'alpha': 0.5}, line_kws={'color': 'red'})
     plt.title('Garage Area vs Above Grade Living Area', fontsize=16)
     plt.xlabel('Above Grade Living Area (sq ft)', fontsize=12)
     plt.ylabel('Garage Area (sq ft)', fontsize=12)
@@ -1133,14 +1130,14 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-    
+
     There is a positive correlation between the size of the garage and the above-grade living area, supporting our ninth hypothesis.
     """)
 
     # OverallQual vs TotalSF
     st.write("#### OverallQual vs TotalSF")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x='OverallQual', y='TotalSF', data=data_for_plotting, palette='coolwarm')
+    sns.boxplot(x='OverallQual', y='TotalSF', data=data_for_corr, palette='coolwarm')
     plt.title('Total Square Footage vs Overall Quality', fontsize=16)
     plt.xlabel('Overall Quality', fontsize=12)
     plt.ylabel('Total Square Footage', fontsize=12)
@@ -1149,7 +1146,7 @@ with tab4:
 
     st.write("""
     **Conclusion:**
-    
+
     The boxplot shows that higher overall quality ratings are associated with larger total square footage, validating our tenth hypothesis.
     """)
 
@@ -1288,39 +1285,40 @@ with tab5:
                 else:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
 
-                # Remove Residual Analysis and Replace with Predicted vs Actual Plot
-                st.header("Predicted vs Actual Sale Prices")
+                # Add Residual Analysis Section
+                st.header("Residual Analysis")
+            st.write("""
+            ### Residual Plot of the Best Model
+            The residual plot helps in diagnosing the performance of the regression model by visualizing the differences between the actual and predicted values.
+            """)
+            try:
+                # Access train_test_data using indices because it's a tuple
+                X_train = train_test_data[0]
+                X_test = train_test_data[1]
+                y_train = train_test_data[2]
+                y_test = train_test_data[3]
+                # Predict on the test set
+                y_pred_log = models[best_model_name].predict(X_test)
+                y_pred = np.expm1(y_pred_log)
+                y_actual = np.expm1(y_test)
+                residuals = y_actual - y_pred
+                plt.figure(figsize=(10, 6))
+                plt.scatter(y_pred, residuals, alpha=0.6)
+                plt.title('Residuals vs Predicted Values', fontsize=16)
+                plt.xlabel('Predicted Sale Price (USD)', fontsize=12)
+                plt.ylabel('Residuals (Actual - Predicted)', fontsize=12)
+                plt.axhline(y=0, color='red', linestyle='--')
+                plt.tight_layout()
+                plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
+                plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
+                st.pyplot(plt)
                 st.write("""
-                ### Predicted vs Actual Sale Prices Plot
-                The plot below shows how well the model's predictions align with the actual sale prices in the test dataset.
+                **Interpretation:**
+                - The residuals are fairly randomly dispersed around zero, indicating a good fit.
+                - No obvious patterns suggest that the model's assumptions are reasonable.
                 """)
-                try:
-                    # Access train_test_data using indices because it's a tuple
-                    X_train = train_test_data[0]
-                    X_test = train_test_data[1]
-                    y_train = train_test_data[2]
-                    y_test = train_test_data[3]
-                    # Predict on the test set
-                    y_pred_log = models[best_model_name].predict(X_test)
-                    y_pred = np.expm1(y_pred_log)
-                    y_actual = np.expm1(y_test)
-                    plt.figure(figsize=(10, 6))
-                    plt.scatter(y_actual, y_pred, alpha=0.6)
-                    plt.plot([y_actual.min(), y_actual.max()], [y_actual.min(), y_actual.max()], 'r--')
-                    plt.title('Predicted vs Actual Sale Prices', fontsize=16)
-                    plt.xlabel('Actual Sale Price (USD)', fontsize=12)
-                    plt.ylabel('Predicted Sale Price (USD)', fontsize=12)
-                    plt.tight_layout()
-                    plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
-                    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
-                    st.pyplot(plt)
-                    st.write("""
-                    **Interpretation:**
-                    - The closer the points are to the red dashed line (where predicted equals actual), the better the model's performance.
-                    - The plot shows that the model predicts sale prices that are generally close to the actual values.
-                    """)
-                except Exception as e:
-                    st.error(f"**Error during plotting Predicted vs Actual Sale Prices:** {e}")
+            except Exception as e:
+                st.error(f"**Error during residual analysis:** {e}")
 
 # --------------------------- #
 #          End of App          #
