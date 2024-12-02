@@ -1085,16 +1085,21 @@ with tab4:
     The positive relationship between lot area and sale price is evident. Larger lots generally contribute to higher property values, supporting our fifth hypothesis.
     """)
 
-    # KitchenQual vs SalePrice_original - Fixed Visualization
+    # KitchenQual vs SalePrice_original
     st.write("#### SalePrice vs KitchenQual")
-    plt.figure(figsize=(10, 6))
-    # Ensure KitchenQual is categorical and ordered
+
+    # Map numeric 'KitchenQual' back to labels for plotting
+    ordinal_mappings_reverse = {1: 'Po', 2: 'Fa', 3: 'TA', 4: 'Gd', 5: 'Ex'}
+    data_for_corr['KitchenQual'] = data_for_corr['KitchenQual'].map(ordinal_mappings_reverse)
+
+    # Ensure 'KitchenQual' is a categorical variable with the correct order
     data_for_corr['KitchenQual'] = pd.Categorical(
         data_for_corr['KitchenQual'],
         categories=['Po', 'Fa', 'TA', 'Gd', 'Ex'],
         ordered=True
     )
-    # Remove the 'palette' parameter to fix the error
+
+    plt.figure(figsize=(10, 6))
     sns.boxplot(
         x='KitchenQual',
         y='SalePrice',
