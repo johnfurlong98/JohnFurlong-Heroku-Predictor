@@ -1089,13 +1089,25 @@ with tab4:
     st.write("#### SalePrice vs KitchenQual")
     plt.figure(figsize=(10, 6))
     # Ensure KitchenQual is categorical and ordered
-    data_for_corr['KitchenQual'] = pd.Categorical(data_for_corr['KitchenQual'], categories=['Po', 'Fa', 'TA', 'Gd', 'Ex'], ordered=True)
-    sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_corr, palette='Pastel1')  # Removed 'order' parameter
+    data_for_corr['KitchenQual'] = pd.Categorical(
+        data_for_corr['KitchenQual'],
+        categories=['Po', 'Fa', 'TA', 'Gd', 'Ex'],
+        ordered=True
+    )
+    # Remove the 'palette' parameter to fix the error
+    sns.boxplot(
+        x='KitchenQual',
+        y='SalePrice',
+        data=data_for_corr
+    )
     plt.title('SalePrice vs Kitchen Quality', fontsize=16)
     plt.xlabel('Kitchen Quality', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
-    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
+    # Format y-axis with dollar signs
+    plt.gca().yaxis.set_major_formatter(
+        plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x))
+    )
     st.pyplot(plt)
 
     st.write("""
