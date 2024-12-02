@@ -286,12 +286,11 @@ def preprocess_data(df, data_reference=None):
 # Load data
 data, inherited_houses = load_data()
 
+# Create data_for_plotting from the raw data before preprocessing
+data_for_plotting = data.copy()  # Contains all original features and values
+
 # Create a copy of the original SalePrice before preprocessing for visualization
 data_original = data[['SalePrice']].copy()
-
-# Load models and related data
-(models, scaler, selected_features, skewed_features, lam_dict, 
- feature_importances, model_evaluation, train_test_data) = load_models()
 
 # Preprocess the main data
 data = preprocess_data(data, data_reference=data)
@@ -928,21 +927,8 @@ with tab4:
     In this section, we explore the foundational hypotheses that guided our analysis and modeling efforts. Each hypothesis is validated using statistical and machine learning techniques, providing a deeper understanding of the factors influencing house prices.
     """)
 
-    # Create a separate DataFrame for plotting with original values
-    data_for_plotting = data_original.copy()
-
-    # Add necessary features for plotting
-    data_for_plotting['LotArea'] = data['LotArea']
-    data_for_plotting['BedroomAbvGr'] = data['BedroomAbvGr']
-    data_for_plotting['GrLivArea'] = data['GrLivArea']
-    data_for_plotting['TotalBsmtSF'] = data['TotalBsmtSF']
-    data_for_plotting['OverallQual'] = data['OverallQual']
-    data_for_plotting['YearRemodAdd'] = data['YearRemodAdd']
-    data_for_plotting['GarageArea'] = data['GarageArea']
-    data_for_plotting['GarageFinish'] = data['GarageFinish']
-    data_for_plotting['YearBuilt'] = data['YearBuilt']
-    data_for_plotting['KitchenQual'] = data['KitchenQual']
-    data_for_plotting['TotalSF'] = data['TotalSF']
+    # Apply feature engineering to data_for_plotting to add 'TotalSF' and 'Qual_TotalSF'
+    data_for_plotting = feature_engineering(data_for_plotting)
 
     # Primary Hypotheses
     st.subheader("### Primary Hypotheses")
@@ -1091,9 +1077,7 @@ with tab4:
     plt.xlabel('Lot Area (sq ft)', fontsize=12)
     plt.ylabel('Sale Price (USD)', fontsize=12)
     plt.tight_layout()
-    # Exclude extreme outliers to focus on the majority of data
-    plt.xlim(0, data_for_plotting['LotArea'].quantile(0.95))
-    plt.ylim(0, data_for_plotting['SalePrice'].quantile(0.95))
+    # Removed xlim and ylim to allow seaborn to determine the appropriate scale
     # Format y-axis with dollar signs
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
     st.pyplot(plt)
@@ -1112,9 +1096,7 @@ with tab4:
     plt.xlabel('Above Grade Living Area (sq ft)', fontsize=12)
     plt.ylabel('Total Basement Area (sq ft)', fontsize=12)
     plt.tight_layout()
-    # Exclude extreme outliers
-    plt.xlim(0, data_for_plotting['GrLivArea'].quantile(0.95))
-    plt.ylim(0, data_for_plotting['TotalBsmtSF'].quantile(0.95))
+    # Removed xlim and ylim to allow seaborn to determine the appropriate scale
     st.pyplot(plt)
 
     st.write("""
@@ -1193,9 +1175,9 @@ with tab4:
     st.write("""
     ### Summary of Hypothesis Validations
 
-    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, lot size, kitchen quality, and the number of bedrooms above grade are significant determinants of house sale prices. Additionally, relationships between other features provide deeper insights into property characteristics. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
+    The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, lot size, and the number of bedrooms above grade are significant determinants of house sale prices. Additionally, relationships between other features provide deeper insights into property characteristics. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
     """)
-
+    
 # --------------------------- #
 #    Model Performance Tab     #
 # --------------------------- #
