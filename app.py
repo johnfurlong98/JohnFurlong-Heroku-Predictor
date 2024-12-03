@@ -1323,5 +1323,5 @@ with tab5:
                     st.error(f"**Error during plotting Predicted vs Actual Sale Prices:** {e}")
 
 # --------------------------- #
-#          End of App          #
+        #End of App#          
 # --------------------------- #
