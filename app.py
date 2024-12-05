@@ -1156,11 +1156,8 @@ with tab5:
                             y_pred_actual = np.expm1(y_pred_log)
                             y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
 
-                            # Ensure y_test is in actual SalePrice values
-                            if np.log1p(y_test).mean() < 1:  # Check if y_test seems logarithmic
-                                y_test_actual = np.expm1(y_test)
-                            else:
-                                y_test_actual = y_test
+                            # Always treat y_test as log-transformed
+                            y_test_actual = np.expm1(y_test)
 
                             # Calculate residuals
                             residuals = y_test_actual - y_pred_actual
@@ -1189,7 +1186,7 @@ with tab5:
                     except Exception as e:
                         st.error(f"**Error during Residual Analysis plotting:** {e}")
                 else:
-                    st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
+    st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
     st.write("""
     ### Conclusion
     The comprehensive evaluation of our regression models underscores the effectiveness of our predictive pipeline. By meticulously preprocessing data, engineering relevant features, and selecting robust models, we've achieved high prediction accuracy and reliability. The insights derived from feature importance and residual analysis further validate our approach, ensuring that the dashboard provides meaningful and actionable information to its users.
