@@ -575,17 +575,46 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(tabs)
 with tab1:
     st.title("House Price Prediction Dashboard")
     st.write("""
-    ## Project Summary
-    Welcome to the House Price Prediction Dashboard. This project aims to build a predictive model to estimate the sale prices of houses based on various features. By analyzing the data and developing robust models, we provide insights into the key factors that influence house prices.
-    **Key Objectives:**
-    - **Data Analysis and Preprocessing:** Understand and prepare the data for modeling.
-    - **Feature Engineering:** Create new features to improve model performance.
-    - **Model Development:** Train and evaluate multiple regression models.
-    - **Deployment:** Develop an interactive dashboard for predictions and insights.
-    **Instructions:**
-    - Use the tabs at the top to navigate between different sections.
-    - Explore data correlations, make predictions, and understand the model performance.
+    ## Project Overview
+    Welcome to the **House Price Prediction Dashboard**, an interactive tool designed to estimate the sale prices of residential properties. This dashboard leverages advanced machine learning techniques to provide accurate and insightful predictions, aiding stakeholders such as homeowners, real estate agents, and investors in making informed decisions.
+
+    ### Background
+    The real estate market is influenced by a multitude of factors ranging from physical property attributes to economic conditions. Accurately predicting house prices requires a comprehensive analysis of these variables to understand their impact on market value.
+
+    ### Objectives
+    The primary goals of this project are:
+    - **Data Analysis and Preprocessing:** Perform thorough exploratory data analysis to understand the underlying patterns and relationships within the data. Clean and preprocess the data to ensure quality and consistency.
+    - **Feature Engineering:** Develop new features that enhance the model's predictive capabilities by capturing essential aspects of the properties that influence sale prices.
+    - **Model Development:** Train and evaluate multiple regression models to identify the best-performing algorithm based on key performance metrics.
+    - **Deployment:** Create an interactive and user-friendly dashboard that allows users to explore data insights and obtain real-time house price predictions.
+
+    ### Methodology
+    - **Data Collection:** Utilized historical house sale data, encompassing various features such as structural details, renovations, and amenities.
+    - **Exploratory Data Analysis (EDA):** Conducted in-depth analysis to identify trends, outliers, and correlations between features and the sale price.
+    - **Data Preprocessing:** Addressed missing values, handled categorical variables through encoding, and transformed skewed data distributions to improve model performance.
+    - **Feature Selection:** Employed statistical techniques and model-based methods to select the most significant features influencing house prices.
+    - **Model Training and Evaluation:** Implemented and compared several regression models, including Linear Regression, Ridge Regression, Lasso Regression, ElasticNet, Random Forest, and Gradient Boosting. Evaluated models using metrics like MAE, RMSE, and R² Score.
+    - **Deployment:** Developed this Streamlit dashboard to make the predictive model accessible for real-time use and to present key findings interactively.
+
+    ### Key Features of the Dashboard
+    - **Feature Correlations:** Visualize and understand how different property features correlate with sale prices.
+    - **House Price Predictions:** Input specific property details to receive instant price predictions.
+    - **Hypothesis Testing:** Explore validated hypotheses that explain the impact of various features on house prices.
+    - **Model Performance:** Review the performance metrics and understand the model's predictive power and limitations.
+
+    ### How to Use This Dashboard
+    - Navigate through the tabs at the top to access different sections.
+    - Use the **Feature Correlations** tab to explore how individual features affect house prices.
+    - Visit the **House Price Predictions** tab to estimate the sale price of a property by entering its attributes.
+    - Delve into the **Project Hypotheses** tab to understand the reasoning behind feature selection and their impact on prices.
+    - Check the **Model Performance** tab for detailed insights into the model's accuracy and reliability.
+
+    ### Acknowledgments
+    This project was developed by John Furlong with support from the Code Institute. We acknowledge the Code Institute for providing comprehensive course material, support staff, lectures, and resources that were instrumental in the completion of this project. The project is based on the Ames Housing Dataset, a comprehensive compilation of property sale records.
+
+    ---
     """)
+
 # --------------------------- #
 #    Feature Correlations Tab  #
 # --------------------------- #
@@ -935,22 +964,6 @@ with tab4:
     **Conclusion:**
     
     The positive relationship between lot area and sale price is evident from the scatter plot. Larger lots provide more outdoor space and potential for future expansions, thereby increasing the property's appeal and market value. This supports our fifth hypothesis regarding the importance of lot size and frontage in determining house prices.
-    """)
-    # KitchenQual vs SalePrice_original
-    st.write("#### SalePrice vs KitchenQual")
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(x='KitchenQual', y='SalePrice', data=data_for_corr, palette='Pastel1')  # Using original SalePrice
-    plt.title('SalePrice vs KitchenQual', fontsize=16)
-    plt.xlabel('Kitchen Quality', fontsize=12)
-    plt.ylabel('Sale Price (USD)', fontsize=12)
-    plt.tight_layout()
-    # Format y-axis with dollar signs
-    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
-    st.pyplot(plt)
-    st.write("""
-    **Conclusion:**
-    
-    The boxplot clearly shows that houses with higher kitchen quality ratings have significantly higher sale prices. This strong positive association validates our sixth hypothesis, emphasizing the critical role of kitchen quality in enhancing property value.
     """)
     # BedroomAbvGr vs SalePrice_original
     st.write("#### SalePrice vs BedroomAbvGr")
