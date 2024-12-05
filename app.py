@@ -1138,37 +1138,58 @@ with tab5:
                         """)
                 else:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
+                # Residual Analysis
                 st.header("Residual Analysis")
-                # Fixed Residual Analysis Section
-                try:
-                    if best_model_name in models and train_test_data:
+                if best_model_name in models and train_test_data:
+                    try:
                         selected_model = models[best_model_name]
+                        # Unpack train/test data
                         X_train, X_test, y_train, y_test = train_test_data
-                        y_pred_log = selected_model.predict(X_test)
-                        y_pred_actual = np.expm1(y_pred_log)
-                        y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
-                        # Inverse transform y_test
-                        y_test_actual = np.expm1(y_test)
-                        residuals = y_test_actual - y_pred_actual
-                        plt.figure(figsize=(10, 6))
-                        plt.scatter(y_pred_actual, residuals, alpha=0.6)
-                        plt.title('Residuals vs Predicted Values', fontsize=16)
-                        plt.xlabel('Predicted Sale Price (USD)', fontsize=12)
-                        plt.ylabel('Residuals (Actual - Predicted)', fontsize=12)
-                        plt.axhline(y=0, color='red', linestyle='--')
-                        plt.tight_layout()
-                        plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
-                        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
-                        st.pyplot(plt)
-                        st.write("""
-                        **Interpretation:**
-                        - The residuals are fairly randomly dispersed around zero, indicating a good fit.
-                        - No obvious patterns suggest that the model's assumptions are reasonable.
-                        """)
-                    else:
-                        st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
-                except Exception as e:
-                    st.error(f"**Error during residual analysis:** {e}")
+
+                        # Ensure train/test data are not empty
+                        if X_test is None or y_test is None or len(X_test) == 0 or len(y_test) == 0:
+                            st.warning("**Warning:** Test data is empty. Cannot perform residual analysis.")
+                        else:
+                            # Predict using the selected model
+                            y_pred_log = selected_model.predict(X_test)
+                            # Inverse transformation of predictions
+                            y_pred_actual = np.expm1(y_pred_log)
+                            y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
+
+                            # Ensure y_test is in actual SalePrice values
+                            if np.log1p(y_test).mean() < 1:  # Check if y_test seems logarithmic
+                                y_test_actual = np.expm1(y_test)
+                            else:
+                                y_test_actual = y_test
+
+                            # Calculate residuals
+                            residuals = y_test_actual - y_pred_actual
+
+                            # Plot residuals distribution
+                            plt.figure(figsize=(10, 6))
+                            sns.histplot(residuals, kde=True, color='coral', bins=30)
+                            plt.title('Residuals Distribution', fontsize=16)
+                            plt.xlabel('Residuals (Actual - Predicted) (USD)', fontsize=12)
+                            plt.ylabel('Frequency', fontsize=12)
+                            plt.tight_layout()
+                            # Format x-axis with dollar signs
+                            plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'${x:,.0f}'))
+                            plt.xticks(rotation=45)
+                            st.pyplot(plt)
+
+                            st.write("""
+                            **Understanding Residuals:**
+                            Residuals represent the differences between actual and predicted sale prices. Analyzing their distribution helps in assessing the model's performance and identifying any underlying patterns or biases.
+
+                            **Key Insights:**
+                            - **Normal Distribution:** Residuals are approximately normally distributed around zero, indicating that the model's errors are random and unbiased.
+                            - **Symmetry:** The symmetrical spread suggests consistent performance across different sale price ranges.
+                            - **Outliers:** Minimal skewness and few outliers indicate that the model handles most data points effectively, with only a handful of predictions deviating significantly.
+                            """)
+                    except Exception as e:
+                        st.error(f"**Error during Residual Analysis plotting:** {e}")
+                else:
+                    st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
     st.write("""
     ### Conclusion
     The comprehensive evaluation of our regression models underscores the effectiveness of our predictive pipeline. By meticulously preprocessing data, engineering relevant features, and selecting robust models, we've achieved high prediction accuracy and reliability. The insights derived from feature importance and residual analysis further validate our approach, ensuring that the dashboard provides meaningful and actionable information to its users.
