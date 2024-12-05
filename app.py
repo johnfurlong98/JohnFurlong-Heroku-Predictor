@@ -867,7 +867,7 @@ with tab4:
     In this section, we explore the foundational hypotheses that guided our analysis and modeling efforts. Each hypothesis is validated using statistical and machine learning techniques, providing a deeper understanding of the factors influencing house prices.
     """)
     # Primary Hypotheses
-    st.subheader("### Primary Hypotheses")
+    st.subheader("Primary Hypotheses")
     st.write("""
     **Hypothesis 1:** *Higher overall quality of the house leads to a higher sale price.*
 
@@ -899,13 +899,7 @@ with tab4:
     - **Validation:** The `LotArea` and `LotFrontage` features have significant positive correlations with the sale price, supporting this hypothesis.
     """)
     st.write("""
-    **Hypothesis 6:** *Kitchen quality is a strong predictor of a house's sale price.*
-
-    - **Rationale:** Kitchens are central to modern living, and high-quality kitchens with modern appliances and finishes are highly sought after.
-    - **Validation:** The `KitchenQual` feature demonstrates a positive correlation with the sale price, confirming its importance.
-    """)
-    st.write("""
-    **Hypothesis 7:** *The number of bedrooms above grade influences the sale price.*
+    **Hypothesis 6:** *The number of bedrooms above grade influences the sale price.*
 
     - **Rationale:** More bedrooms can accommodate larger families, increasing the property's appeal to potential buyers.
     - **Validation:** The `BedroomAbvGr` feature shows a positive correlation with the sale price, supporting this hypothesis.
