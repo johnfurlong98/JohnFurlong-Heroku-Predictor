@@ -1,4 +1,3 @@
-
 # app.py
 import streamlit as st
 import pandas as pd
@@ -11,20 +10,25 @@ from scipy.stats import boxcox
 from scipy.special import inv_boxcox  # Added for inverse Box-Cox transformation
 import pickle
 from pathlib import Path
+
 # --------------------------- #
 #       Configuration          #
 # --------------------------- #
+
 # Get the directory where the script is located
 BASE_DIR = Path(__file__).resolve().parent
+
 # Set up page configuration with custom theme
 st.set_page_config(
     page_title="House Price Prediction Dashboard",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
 # --------------------------- #
 #       Helper Functions       #
 # --------------------------- #
+
 def check_file_exists(file_path, description):
     """
     Checks if a given file exists. If not, displays an error and stops the app.
@@ -32,6 +36,7 @@ def check_file_exists(file_path, description):
     if not file_path.exists():
         st.error(f"**Error:** The {description} file was not found at `{file_path}`.")
         st.stop()
+
 @st.cache_data(show_spinner=False)
 def load_data():
     """
@@ -39,36 +44,37 @@ def load_data():
     """
     data_path = BASE_DIR / 'dashboard' / 'notebook' / 'raw_data' / 'house_prices_records.csv'
     inherited_houses_path = BASE_DIR / 'dashboard' / 'notebook' / 'raw_data' / 'inherited_houses.csv'
-    
+
     # Check if files exist
     check_file_exists(data_path, "house_prices_records.csv")
     check_file_exists(inherited_houses_path, "inherited_houses.csv")
-    
+
     try:
         data = pd.read_csv(data_path)
     except Exception as e:
         st.error(f"**Error loading house_prices_records.csv:** {e}")
         st.stop()
-    
+
     try:
         inherited_houses = pd.read_csv(inherited_houses_path)
     except Exception as e:
         st.error(f"**Error loading inherited_houses.csv:** {e}")
         st.stop()
-    
+
     return data, inherited_houses
+
 @st.cache_resource(show_spinner=False)
 def load_models():
     """
     Loads all necessary models and related objects.
     """
     models_dir = BASE_DIR / 'dashboard' / 'notebook' / 'data' / 'models'
-    
+
     # Check if models directory exists
     if not models_dir.exists():
         st.error(f"**Error:** The models directory was not found at `{models_dir}`.")
         st.stop()
-    
+
     models = {}
     model_files = {
         'Linear Regression': 'linear_regression_model.joblib',
@@ -78,7 +84,7 @@ def load_models():
         'Gradient Boosting': 'gradient_boosting_model.joblib',
         'Random Forest': 'random_forest_model.joblib'
     }
-    
+
     for name, filename in model_files.items():
         model_path = models_dir / filename
         check_file_exists(model_path, f"{filename}")
@@ -87,7 +93,7 @@ def load_models():
         except Exception as e:
             st.error(f"**Error loading {filename}:** {e}")
             st.stop()
-    
+
     # Load scaler and other related objects
     scaler_path = models_dir / 'scaler.joblib'
     selected_features_path = models_dir / 'selected_features.pkl'
@@ -96,7 +102,7 @@ def load_models():
     feature_importances_path = models_dir / 'feature_importances.csv'
     model_evaluation_path = models_dir / 'model_evaluation.csv'
     train_test_data_path = models_dir / 'train_test_data.joblib'
-    
+
     # Check if all necessary files exist
     required_files = {
         "scaler.joblib": scaler_path,
@@ -107,53 +113,54 @@ def load_models():
         "model_evaluation.csv": model_evaluation_path,
         "train_test_data.joblib": train_test_data_path
     }
-    
+
     for description, path in required_files.items():
         check_file_exists(path, description)
-    
+
     try:
         scaler = joblib.load(scaler_path)
     except Exception as e:
         st.error(f"**Error loading scaler.joblib:** {e}")
         st.stop()
-    
+
     try:
         selected_features = pickle.load(open(selected_features_path, 'rb'))
     except Exception as e:
         st.error(f"**Error loading selected_features.pkl:** {e}")
         st.stop()
-    
+
     try:
         skewed_features = pickle.load(open(skewed_features_path, 'rb'))
     except Exception as e:
         st.error(f"**Error loading skewed_features.pkl:** {e}")
         st.stop()
-    
+
     try:
         lam_dict = pickle.load(open(lam_dict_path, 'rb'))
     except Exception as e:
         st.error(f"**Error loading lam_dict.pkl:** {e}")
         st.stop()
-    
+
     try:
         feature_importances = pd.read_csv(feature_importances_path)
     except Exception as e:
         st.error(f"**Error loading feature_importances.csv:** {e}")
         st.stop()
-    
+
     try:
         model_evaluation = pd.read_csv(model_evaluation_path)
     except Exception as e:
         st.error(f"**Error loading model_evaluation.csv:** {e}")
         st.stop()
-    
+
     try:
         train_test_data = joblib.load(train_test_data_path)
     except Exception as e:
         st.error(f"**Error loading train_test_data.joblib:** {e}")
         st.stop()
-    
+
     return models, scaler, selected_features, skewed_features, lam_dict, feature_importances, model_evaluation, train_test_data
+
 @st.cache_data(show_spinner=False)
 def feature_engineering(df):
     """
@@ -163,16 +170,17 @@ def feature_engineering(df):
     df['TotalSF'] = df.get('TotalBsmtSF', 0) + df.get('1stFlrSF', 0) + df.get('2ndFlrSF', 0)
     df['Qual_TotalSF'] = df.get('OverallQual', 0) * df.get('TotalSF', 0)
     return df
+
 @st.cache_data(show_spinner=False)
 def preprocess_data(df, data_reference=None):
     """
     Preprocesses the input data by handling missing values, encoding categorical variables,
     and transforming skewed features.
-    
+
     **Note:** The 'SalePrice' is excluded from skewed feature transformations to preserve its original scale for visualization purposes.
     """
     df_processed = df.copy()
-    
+
     # Map full words back to codes
     user_to_model_mappings = {
         'BsmtFinType1': {
@@ -208,14 +216,14 @@ def preprocess_data(df, data_reference=None):
     for col, mapping in user_to_model_mappings.items():
         if col in df_processed.columns:
             df_processed[col] = df_processed[col].map(mapping)
-    
+
     # Handle missing values
     zero_fill_features = ['2ndFlrSF', 'EnclosedPorch', 'MasVnrArea', 'WoodDeckSF',
                           'BsmtFinSF1', 'TotalBsmtSF', '1stFlrSF', 'BsmtUnfSF']
     for feature in zero_fill_features:
         if feature in df_processed.columns:
             df_processed[feature] = df_processed[feature].fillna(0)
-    
+
     # Fill categorical features
     categorical_mode_fill = {
         'BsmtFinType1': 'None',
@@ -226,9 +234,9 @@ def preprocess_data(df, data_reference=None):
     for feature, value in categorical_mode_fill.items():
         if feature in df_processed.columns:
             df_processed[feature] = df_processed[feature].fillna(value)
-    
+
     # Fill numerical features using median from training data
-    numerical_median_fill = ['BedroomAbvGr', 'GarageYrBlt', 'LotFrontage', 
+    numerical_median_fill = ['BedroomAbvGr', 'GarageYrBlt', 'LotFrontage',
                              'OverallQual', 'OverallCond', 'YearBuilt', 'YearRemodAdd']
     for feature in numerical_median_fill:
         if feature in df_processed.columns:
@@ -237,7 +245,7 @@ def preprocess_data(df, data_reference=None):
             else:
                 median_value = df_processed[feature].median()
             df_processed[feature] = df_processed[feature].fillna(median_value)
-    
+
     # Encode categorical features
     ordinal_mappings = {
         'BsmtFinType1': {'None': 0, 'Unf': 1, 'LwQ': 2, 'Rec': 3, 'BLQ': 4, 'ALQ': 5, 'GLQ': 6},
@@ -248,10 +256,10 @@ def preprocess_data(df, data_reference=None):
     for col, mapping in ordinal_mappings.items():
         if col in df_processed.columns:
             df_processed[col] = df_processed[col].map(mapping)
-    
+
     # Feature engineering
     df_processed = feature_engineering(df_processed)
-    
+
     # Transform skewed features, excluding 'SalePrice' to preserve original scale for visualization
     for feat in skewed_features:
         if feat == 'SalePrice':
@@ -268,23 +276,30 @@ def preprocess_data(df, data_reference=None):
                         df_processed[feat] = np.log1p(df_processed[feat])
                 else:
                     df_processed[feat] = np.log1p(df_processed[feat])
-    
+
     return df_processed
+
 # --------------------------- #
 #       Load Data & Models     #
 # --------------------------- #
+
 # Load data
 data, inherited_houses = load_data()
+
 # Create a copy of the original SalePrice before preprocessing for visualization
 data_original = data[['SalePrice']].copy()
+
 # Load models and related data
-(models, scaler, selected_features, skewed_features, lam_dict, 
+(models, scaler, selected_features, skewed_features, lam_dict,
  feature_importances, model_evaluation, train_test_data) = load_models()
+
 # Preprocess the main data
 data = preprocess_data(data, data_reference=data)
+
 # --------------------------- #
 #       Feature Metadata       #
 # --------------------------- #
+
 # Metadata for features (from the provided metadata)
 feature_metadata = {
     '1stFlrSF': 'First Floor square feet',
@@ -313,9 +328,11 @@ feature_metadata = {
     'TotalSF': 'Total square feet of house (including basement)',
     'Qual_TotalSF': 'Product of OverallQual and TotalSF'
 }
+
 # --------------------------- #
 #   Feature Input Definitions #
 # --------------------------- #
+
 # Define feature input details for the user input form
 feature_input_details = {
     'OverallQual': {
@@ -394,7 +411,7 @@ feature_input_details = {
         'input_type': 'number_input',
         'label': 'Lot Area (sq ft)',
         'min_value': 0,
-        'max_value': 10000,
+        'max_value': 100000,
         'value': 1300,
         'step': 1,
         'help_text': feature_metadata['LotArea']
@@ -497,7 +514,7 @@ feature_input_details = {
         'max_value': 10000,
         'value': int(data['OpenPorchSF'].median()) if 'OpenPorchSF' in data.columns else 0,
         'step': 1,
-        'help_text': feature_metadata['OpenPorchSF']
+        'help_text': feature_metadata.get('OpenPorchSF', '')
     },
     'EnclosedPorch': {
         'input_type': 'number_input',
@@ -506,7 +523,7 @@ feature_input_details = {
         'max_value': 10000,
         'value': int(data['EnclosedPorch'].median()) if 'EnclosedPorch' in data.columns else 0,
         'step': 1,
-        'help_text': feature_metadata['EnclosedPorch']
+        'help_text': feature_metadata.get('EnclosedPorch', '')
     },
     'BedroomAbvGr': {
         'input_type': 'slider',
@@ -539,9 +556,11 @@ feature_input_details = {
         'help_text': feature_metadata['MasVnrArea']
     },
 }
+
 # --------------------------- #
 #       Custom Styling         #
 # --------------------------- #
+
 # Apply custom CSS for enhanced UI (optional)
 st.markdown(
     """
@@ -563,15 +582,19 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 # --------------------------- #
 #          Main App            #
 # --------------------------- #
+
 # Create tabs for navigation
 tabs = ["Project Summary", "Feature Correlations", "House Price Predictions", "Project Hypotheses", "Model Performance"]
 tab1, tab2, tab3, tab4, tab5 = st.tabs(tabs)
+
 # --------------------------- #
 #      Project Summary Tab     #
 # --------------------------- #
+
 with tab1:
     st.title("House Price Prediction Dashboard")
     st.write("""
@@ -618,6 +641,7 @@ with tab1:
 # --------------------------- #
 #    Feature Correlations Tab  #
 # --------------------------- #
+
 with tab2:
     st.title("Feature Correlations")
     st.write("""
@@ -668,7 +692,7 @@ with tab2:
                     pairplot_data = data_for_corr[top_features + ['SalePrice']].sample(n=sample_size, random_state=42)
                 else:
                     pairplot_data = data_for_corr[top_features + ['SalePrice']]
-                
+
                 sns.set(style="ticks")
                 pairplot_fig = sns.pairplot(pairplot_data, diag_kind='kde', height=2.5)
                 plt.suptitle('Pairplot of Top Correlated Features', y=1.02)
@@ -683,9 +707,11 @@ with tab2:
     - **Insight Generation:** Correlation analysis provides actionable insights into what drives house prices, aiding stakeholders in making informed decisions.
     **Note:** Correlation does not imply causation. While features may be correlated with the sale price, further analysis is required to establish causal relationships.
     """)
+
 # --------------------------- #
 #  House Price Predictions Tab #
 # --------------------------- #
+
 with tab3:
     st.title("House Price Predictions")
     # Inherited Houses Predictions
@@ -747,6 +773,7 @@ with tab3:
     ## Predict Sale Prices in Real-Time
     Harness the power of our predictive model by inputting specific house attributes to receive instant sale price estimates. This feature is particularly useful for assessing the value of a property based on its characteristics.
     """)
+
     def user_input_features():
         """
         Creates a form for users to input house features and returns the input data as a DataFrame.
@@ -808,6 +835,7 @@ with tab3:
             return input_df
         else:
             return None
+
     user_input = user_input_features()
     if user_input is not None:
         try:
@@ -827,9 +855,11 @@ with tab3:
     4. **Prediction:** The processed data is fed into the best-performing regression model to generate an estimated sale price.
     5. **Output:** Receive an instant prediction of the house's market value, aiding in informed decision-making.
     """)
+
 # --------------------------- #
 #      Project Hypotheses Tab  #
 # --------------------------- #
+
 with tab4:
     st.title("Project Hypotheses")
     st.write("""
@@ -840,43 +870,43 @@ with tab4:
     st.subheader("### Primary Hypotheses")
     st.write("""
     **Hypothesis 1:** *Higher overall quality of the house leads to a higher sale price.*
-    
+
     - **Rationale:** Quality metrics such as construction standards, materials used, and overall maintenance directly impact the desirability and value of a property.
     - **Validation:** The `OverallQual` feature shows a strong positive correlation with the sale price, confirming this hypothesis.
     """)
     st.write("""
     **Hypothesis 2:** *Larger living areas result in higher sale prices.*
-    
+
     - **Rationale:** Square footage is a fundamental indicator of a property's size and usability. Larger homes typically offer more living space, which is highly valued in the real estate market.
     - **Validation:** Features like `GrLivArea` and `TotalSF` have high correlations with the sale price, supporting this hypothesis.
     """)
     st.write("""
     **Hypothesis 3:** *Recent renovations positively impact the sale price.*
-    
+
     - **Rationale:** Modern updates and renovations can enhance a property's appeal, functionality, and energy efficiency, thereby increasing its market value.
     - **Validation:** The `YearRemodAdd` feature correlates with the sale price, indicating that more recent remodels can increase the house value.
     """)
     st.write("""
     **Hypothesis 4:** *The presence and quality of a garage significantly influence the sale price.*
-    
+
     - **Rationale:** Garages add convenience and storage space, enhancing the property's functionality. Higher-quality garages are often associated with better construction and maintenance.
     - **Validation:** Features like `GarageArea` and `GarageFinish` show positive correlations with the sale price, validating this hypothesis.
     """)
     st.write("""
     **Hypothesis 5:** *Lot size and frontage are key determinants of a house's market value.*
-    
+
     - **Rationale:** Larger lots provide more outdoor space, which is desirable for families and can offer potential for future expansions or landscaping.
     - **Validation:** The `LotArea` and `LotFrontage` features have significant positive correlations with the sale price, supporting this hypothesis.
     """)
     st.write("""
     **Hypothesis 6:** *Kitchen quality is a strong predictor of a house's sale price.*
-    
+
     - **Rationale:** Kitchens are central to modern living, and high-quality kitchens with modern appliances and finishes are highly sought after.
     - **Validation:** The `KitchenQual` feature demonstrates a positive correlation with the sale price, confirming its importance.
     """)
     st.write("""
     **Hypothesis 7:** *The number of bedrooms above grade influences the sale price.*
-    
+
     - **Rationale:** More bedrooms can accommodate larger families, increasing the property's appeal to potential buyers.
     - **Validation:** The `BedroomAbvGr` feature shows a positive correlation with the sale price, supporting this hypothesis.
     """)
@@ -895,7 +925,7 @@ with tab4:
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
-    
+
     The boxplot illustrates a clear trend where houses with higher overall quality ratings command higher sale prices. This strong positive relationship validates our first hypothesis, emphasizing the significant impact of overall quality on property value.
     """)
     # TotalSF vs SalePrice_original
@@ -912,7 +942,7 @@ with tab4:
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
-    
+
     The scatter plot reveals a positive correlation between total square footage and sale price. Larger homes with more square footage tend to have higher sale prices, supporting our second hypothesis that size is a key determinant of property value.
     """)
     # YearRemodAdd vs SalePrice_original
@@ -928,7 +958,7 @@ with tab4:
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
-    
+
     The line plot shows an upward trend in sale prices with more recent remodeling years. This indicates that recent renovations and updates contribute positively to the property's market value, thereby validating our third hypothesis.
     """)
     # GarageArea vs SalePrice_original
@@ -945,7 +975,7 @@ with tab4:
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
-    
+
     The scatter plot indicates that larger garage areas are associated with higher sale prices. Additionally, the quality of the garage finish further enhances the property's value. These observations confirm our fourth hypothesis, highlighting the significant role of garage features in determining house prices.
     """)
     # LotArea vs SalePrice_original
@@ -962,7 +992,7 @@ with tab4:
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
-    
+
     The positive relationship between lot area and sale price is evident from the scatter plot. Larger lots provide more outdoor space and potential for future expansions, thereby increasing the property's appeal and market value. This supports our fifth hypothesis regarding the importance of lot size and frontage in determining house prices.
     """)
     # BedroomAbvGr vs SalePrice_original
@@ -978,16 +1008,18 @@ with tab4:
     st.pyplot(plt)
     st.write("""
     **Conclusion:**
-    
+
     The boxplot indicates a positive trend where an increasing number of bedrooms above grade correlates with higher sale prices. This finding supports our seventh hypothesis, demonstrating that more bedrooms enhance the property's appeal and market value.
     """)
     st.write("""
     ### Summary of Hypothesis Validations
     The visualizations above support our hypotheses, indicating that overall quality, living area, recent renovations, garage features, lot size, kitchen quality, and the number of bedrooms above grade are significant determinants of house sale prices. These insights can guide stakeholders in making informed decisions regarding property investments, renovations, and marketing strategies.
     """)
+
 # --------------------------- #
 #    Model Performance Tab     #
 # --------------------------- #
+
 with tab5:
     st.title("Model Performance")
     st.header("Performance Metrics")
@@ -1112,71 +1144,48 @@ with tab5:
                         """)
                 else:
                     st.warning(f"**Warning:** Feature importances for the model '{best_model_name}' are not available.")
-                st.header("Feature Relationships (Excluding OverallQual)")
-                # Select features excluding 'OverallQual'
-                feature_relations = [feat for feat in selected_features if feat != 'OverallQual']
-                if len(feature_relations) < 2:
-                    st.warning("**Warning:** Not enough features to create a feature relationships plot excluding 'OverallQual'.")
-                else:
-                    # Select top 5 features excluding 'OverallQual' for clarity
-                    top_features_rel = feature_relations[:5]
-                    # Prepare data for pairplot
-                    pairplot_data = data_for_corr[top_features_rel + ['SalePrice']]
-                    # To optimize performance, sample the data if it's too large
-                    sample_size = 500  # Adjust based on performance
-                    if pairplot_data.shape[0] > sample_size:
-                        pairplot_data = pairplot_data.sample(n=sample_size, random_state=42)
-                    sns.set(style="ticks")
-                    pairplot_fig = sns.pairplot(pairplot_data, diag_kind='kde', height=2.5)
-                    plt.suptitle('Feature Relationships Excluding OverallQual', y=1.02)
-                    st.pyplot(pairplot_fig)
-                    st.write("""
-                    **Feature Relationships:**
-                    The pairplot above visualizes the relationships between selected features and the sale price, excluding the top feature `OverallQual`. This provides a clearer view of how other significant features interact with the sale price.
-                    """)
                 st.header("Residual Analysis")
-                if best_model_name in models and train_test_data:
-                    selected_model = models[best_model_name]
-                    X_train, X_test, y_train, y_test = train_test_data
-                    try:
+                # Fixed Residual Analysis Section
+                try:
+                    if best_model_name in models and train_test_data:
+                        selected_model = models[best_model_name]
+                        X_train, X_test, y_train, y_test = train_test_data
                         y_pred_log = selected_model.predict(X_test)
-                        # Inverse transformation of predictions
                         y_pred_actual = np.expm1(y_pred_log)
                         y_pred_actual[y_pred_actual < 0] = 0  # Handle negative predictions
-                        # Since y_test is already in actual SalePrice values, no transformation needed
-                        y_test_actual = y_test
+                        # Inverse transform y_test
+                        y_test_actual = np.expm1(y_test)
                         residuals = y_test_actual - y_pred_actual
                         plt.figure(figsize=(10, 6))
-                        sns.histplot(residuals, kde=True, color='coral', bins=30)
-                        plt.title('Residuals Distribution', fontsize=16)
-                        plt.xlabel('Residuals (Actual - Predicted) (USD)', fontsize=12)
-                        plt.ylabel('Frequency', fontsize=12)
+                        plt.scatter(y_pred_actual, residuals, alpha=0.6)
+                        plt.title('Residuals vs Predicted Values', fontsize=16)
+                        plt.xlabel('Predicted Sale Price (USD)', fontsize=12)
+                        plt.ylabel('Residuals (Actual - Predicted)', fontsize=12)
+                        plt.axhline(y=0, color='red', linestyle='--')
                         plt.tight_layout()
-                        # Format x-axis with dollar signs and reduce number of ticks
                         plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
-                        plt.xticks(rotation=45)
+                        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: '${:,.0f}'.format(x)))
                         st.pyplot(plt)
                         st.write("""
-                        **Understanding Residuals:**
-                        Residuals represent the differences between actual and predicted sale prices. Analyzing their distribution helps in assessing the model's performance and identifying any underlying patterns or biases.
-                        **Key Insights:**
-                        - **Normal Distribution:** Residuals are approximately normally distributed around zero, indicating that the model's errors are random and unbiased.
-                        - **Symmetry:** The symmetrical spread suggests consistent performance across different sale price ranges.
-                        - **Outliers:** Minimal skewness and few outliers indicate that the model handles most data points effectively, with only a handful of predictions deviating significantly.
+                        **Interpretation:**
+                        - The residuals are fairly randomly dispersed around zero, indicating a good fit.
+                        - No obvious patterns suggest that the model's assumptions are reasonable.
                         """)
-                    except Exception as e:
-                        st.error(f"**Error during Residual Analysis plotting:** {e}")
                     else:
                         st.warning(f"**Warning:** Selected model '{best_model_name}' not found or train/test data is missing.")
+                except Exception as e:
+                    st.error(f"**Error during residual analysis:** {e}")
     st.write("""
     ### Conclusion
     The comprehensive evaluation of our regression models underscores the effectiveness of our predictive pipeline. By meticulously preprocessing data, engineering relevant features, and selecting robust models, we've achieved high prediction accuracy and reliability. The insights derived from feature importance and residual analysis further validate our approach, ensuring that the dashboard provides meaningful and actionable information to its users.
+
     **Next Steps:**
     - **Data Enrichment:** Incorporate additional features such as geographical location, proximity to amenities, and economic indicators to enhance model performance.
     - **Model Expansion:** Explore and integrate more sophisticated models or ensemble techniques to capture complex data patterns.
     - **User Feedback:** Gather feedback from users to identify areas of improvement and potential new features for the dashboard.
     - **Continuous Monitoring:** Implement mechanisms to monitor model performance over time, ensuring sustained accuracy and relevance.
     """)
+
 # --------------------------- #
 #          End of App          #
 # --------------------------- #
