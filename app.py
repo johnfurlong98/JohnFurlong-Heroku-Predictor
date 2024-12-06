@@ -682,7 +682,7 @@ with tab2:
             """)
             # Interactive visualization showing visualization between feature of your choice and sale price.
 
-            st.write("### Interactive Feature vs. SalePrice Plot")
+            st.write("### Choose a Feature vs. SalePrice Plot")
             st.write("""
             You can select one of the top correlated features from the dropdown below to interactively visualize its relationship with the house sale price. This interactive scatter plot allows you to hover over points and view additional details, helping you gain deeper insights into how specific features influence the sale price.
             """)
