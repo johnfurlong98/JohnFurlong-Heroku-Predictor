@@ -10,6 +10,7 @@ from scipy.stats import boxcox
 from scipy.special import inv_boxcox  # Added for inverse Box-Cox transformation
 import pickle
 from pathlib import Path
+import plotly.express as px
 
 # --------------------------- #
 #       Configuration          #
@@ -679,6 +680,31 @@ with tab2:
             - **Garage Area (`GarageArea`):** Larger garages contribute to higher house values.
             - **Lot Area (`LotArea`):** Bigger lots generally correlate with increased sale prices.
             """)
+            # Interactive visualization showing visualization between feature of your choice and sale price.
+
+            st.write("### Interactive Feature vs. SalePrice Plot")
+            st.write("""
+            You can select one of the top correlated features from the dropdown below to interactively visualize its relationship with the house sale price. This interactive scatter plot allows you to hover over points and view additional details, helping you gain deeper insights into how specific features influence the sale price.
+            """)
+
+            # Create a select box to choose a feature for the scatter plot
+            selected_feature = st.selectbox(
+                "Select a feature to visualize against SalePrice",
+                options=[feat for feat in top_corr_features if feat != 'SalePrice']
+            )
+
+            # Create an interactive scatter plot using Plotly
+            fig = px.scatter(
+                data_for_corr,
+                x=selected_feature,
+                y="SalePrice",
+                color="OverallQual",  # using OverallQual just as an example for an additional dimension
+                hover_data=["GrLivArea", "GarageArea", "YearBuilt"],  # Some relevant features for more context
+                title=f"SalePrice vs {selected_feature}"
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+
             # Additional visualization: Pairplot with top features
             st.write("### Pairplot of Top Correlated Features")
             # Select top 5 features excluding 'SalePrice'
