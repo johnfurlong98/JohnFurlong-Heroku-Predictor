@@ -8,8 +8,6 @@ __pycache__/
 env/
 ENV/
 
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
 
 # Python specific cache and builds
 *.egg
