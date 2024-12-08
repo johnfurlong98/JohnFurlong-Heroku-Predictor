@@ -183,11 +183,12 @@ No known unfixed bugs. Thorough testing ensures stable performance and reliable 
 **Heroku Live Link:**  
 [House Price Prediction Dashboard](https://john-furlong-price-predictor-ee67ab0394fa.herokuapp.com/)
 
+**Note:** Remove Heroku-specific files (e.g., `Procfile`) when deploying to Streamlit, where the app and XGBoost run smoothly.
+
 **Steps:**
-1. Set up GitHub repository with code, models, data, and requirements.
-2. Include `Procfile` and `runtime.txt` for Heroku.
-3. Deploy via Heroku CLI or web interface.
-4. Access the deployed app using the provided Heroku URL.
+1. Prepare GitHub repo with models, code, and data.
+2. Add `Procfile` and `runtime.txt` for Heroku if using Heroku.
+3. Deploy on Heroku or run on Streamlit.
 
 ---
 
@@ -201,3 +202,8 @@ No known unfixed bugs. Thorough testing ensures stable performance and reliable 
 ---
 
 This README presents a comprehensive overview of the project’s aims, methodology, and value. By combining CRISP-DM principles, data-driven insights, and robust ML models, the House Price Prediction Dashboard exemplifies a professional, real-world application of Data Science to support informed decision-making in the housing market.
+
+### Acknowledgments & Resources
+This project was developed by John Furlong with support from the Code Institute. Their comprehensive curriculum, supportive resources, and practical assignments provided the foundational knowledge required to build this solution. The Ames Housing Dataset served as an excellent real-world data source, supplying rich feature information.
+
+Additionally, ChatGPT by OpenAI aided in conceptual clarification, technique refinement, and problem-solving. This synergy combining structured learning with AI driven guidance resulted in a robust, reliable, and user-focused tool.
