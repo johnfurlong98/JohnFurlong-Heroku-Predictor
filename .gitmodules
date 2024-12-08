@@ -1,0 +1,3 @@
+[submodule "JohnFurlong-Heroku-Predictor"]
+	path = JohnFurlong-Heroku-Predictor
+	url = https://github.com/johnfurlong98/JohnFurlong-Heroku-Predictor.git
