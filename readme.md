@@ -15,6 +15,9 @@ The primary users—homeowners, real estate agents, investors—benefit from imm
 
 The dataset includes nearly 1,500 housing records from Ames, Iowa, detailing structural and qualitative features such as basement finish quality, garage size, kitchen quality, lot dimensions, porch areas, and more. Each record includes a corresponding sale price, making it possible to analyze correlations and build predictive models.
 
+- **Mechanism:** Instead of relying solely on local CSV files, we utilize the Kaggle API to programmatically download the dataset within the Jupyter Notebook environment. By setting Kaggle credentials in an `.env` file and loading them securely, the notebook runs a `kaggle datasets download` command to fetch and unzip the dataset directly from the external endpoint.
+- **Outcome:** This approach ensures the project dynamically retrieves data from an external source, reflecting a professional standard of external data acquisition and integration.
+
 **Key Features Include:**
 
 - **1stFlrSF / 2ndFlrSF:** Floor areas above ground.
@@ -204,6 +207,6 @@ No known unfixed bugs. Thorough testing ensures stable performance and reliable 
 This README presents a comprehensive overview of the project’s aims, methodology, and value. By combining CRISP-DM principles, data-driven insights, and robust ML models, the House Price Prediction Dashboard exemplifies a professional, real-world application of Data Science to support informed decision-making in the housing market.
 
 ### Acknowledgments & Resources
-This project was developed by John Furlong with support from the Code Institute. Their comprehensive curriculum, supportive resources, and practical assignments provided the foundational knowledge required to build this solution. The Ames Housing Dataset served as an excellent real-world data source, supplying rich feature information.
+This project was developed by John Furlong with support from the Code Institute. Their comprehensive curriculum, supportive resources, and practical assignments provided the foundational knowledge required to build this solution. The Ames Housing Dataset served as an excellent real-world data source, supplying rich feature information. The notebook obtains the data via the Kaggle endpoint, providing a rich, real-world testing ground.
 
 Additionally, ChatGPT by OpenAI aided in conceptual clarification, technique refinement, and problem-solving. This synergy combining structured learning with AI driven guidance resulted in a robust, reliable, and user-focused tool.
