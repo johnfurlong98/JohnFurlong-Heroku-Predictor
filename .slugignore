@@ -21,3 +21,6 @@ README.md
 *.log
 *.tmp
 *.bak
+
+# Ignore Streamlit Version
+Streamlit-Deployment-John-Furlong/
