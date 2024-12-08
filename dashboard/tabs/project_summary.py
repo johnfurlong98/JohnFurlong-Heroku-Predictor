@@ -83,7 +83,7 @@ def show_page(data, data_original, models, scaler, selected_features, skewed_fea
     ### Acknowledgments & Resources
     This project was developed by John Furlong with support from the Code Institute. Their comprehensive curriculum, supportive resources, and practical assignments provided the foundational knowledge required to build this solution. The Ames Housing Dataset served as an excellent real-world data source, supplying rich feature information.
 
-    Additionally, ChatGPT by OpenAI aided in conceptual clarification, technique refinement, and problem-solving. This synergy—combining structured learning with AI-driven guidance—resulted in a robust, reliable, and user-focused tool.
+    Additionally, ChatGPT by OpenAI aided in conceptual clarification, technique refinement, and problem-solving. This synergy combining structured learning with AI driven guidance resulted in a robust, reliable, and user-focused tool.
 
     **In essence**, this House Price Prediction Dashboard is a professional, end-to-end Data Science project. By weaving together business requirements, CRISP-DM methodologies, ML best practices, and user-centric design, it stands as a credible demonstration of how data and predictive modeling can shape strategic decisions in the real estate market.
 

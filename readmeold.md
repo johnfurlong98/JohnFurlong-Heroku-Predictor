@@ -1,30 +1,16 @@
+# House Price Prediction Dashboard
 
-# House Price Prediction Dashboard by John Furlong
+# Introduction
 
-## Introduction
+* This House Price Prediction Dashboard is an end-to-end Data Science and Machine Learning project designed to estimate residential property sale prices in Ames, Iowa. By applying the CRISP-DM methodology, leveraging Machine Learning (ML) models, and incorporating user-centered design, this solution addresses real-world business needs. 
+* The dashboard offers both data-driven insights into which features most influence property values and an interactive tool to generate real-time predictions for any given property’s attributes.
 
-This House Price Prediction Dashboard is an end-to-end Data Science and Machine Learning project designed to estimate residential property sale prices in Ames, Iowa. By applying the CRISP-DM methodology, leveraging Machine Learning (ML) models, and incorporating user-centered design, this solution addresses real-world business needs. The dashboard offers both data-driven insights into which features most influence property values and an interactive tool to generate real-time predictions for any given property’s attributes.
-
-The primary users—homeowners, real estate agents, investors—benefit from immediate, reliable price estimates and clarity on the driving factors behind property values. The project demonstrates how domain understanding, robust data preprocessing, careful feature engineering, model evaluation, and user-friendly deployment converge to deliver actionable insights.
-
----
+* The primary users—homeowners, real estate agents, investors—benefit from immediate, reliable price estimates and clarity on the driving factors behind property values. The project demonstrates how domain understanding, robust data preprocessing, careful feature engineering, model evaluation, and user-friendly deployment converge to deliver actionable insights.
 
 ## Dataset Content
 
-**Source:** [Kaggle Ames Housing Dataset](https://www.kaggle.com/codeinstitute/housing-prices-data)
-
-The dataset includes nearly 1,500 housing records from Ames, Iowa, detailing structural and qualitative features such as basement finish quality, garage size, kitchen quality, lot dimensions, porch areas, and more. Each record includes a corresponding sale price, making it possible to analyze correlations and build predictive models.
-
-**Key Features Include:**
-
-- **1stFlrSF / 2ndFlrSF:** Floor areas above ground.
-- **OverallQual / OverallCond:** Ratings of property quality and condition.
-- **GrLivArea / TotalBsmtSF:** Living area and basement size.
-- **GarageFinish / GarageArea:** Garage attributes influencing convenience and property value.
-- **YearBuilt / YearRemodAdd:** Temporal attributes capturing historical construction and renovation efforts.
-- **SalePrice:** Target variable representing the actual sale price of the property.
-
-**Comprehensive List of Features and their Units**
+* The dataset is sourced from [Kaggle](https://www.kaggle.com/codeinstitute/housing-prices-data). We created a fictitious user story where predictive analytics can be applied in a real project in the workplace.
+* The dataset has almost 1,500 rows and represents housing records from Ames, Iowa. It includes house profiles (e.g., Floor Area, Basement, Garage, Kitchen, Lot, Porch, Wood Deck, Year Built) and their respective sale prices for houses built between 1872 and 2010.
 
 | Variable          | Meaning                                                   | Units                                                                                                                                                                                                                                                                     |
 |-------------------|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -53,151 +39,199 @@ The dataset includes nearly 1,500 housing records from Ames, Iowa, detailing str
 | **YearRemodAdd**  | Remodel date (same as construction date if no remodeling or additions) | 1950 - 2010                                                                                                                                                                                                                                                    |
 | **SalePrice**     | Sale Price                                                | \$34,900 - \$755,000                                                                                                                                                                                                                                                      |
 
----
-
 ## Business Requirements
 
-**Context:** Lydia Doe inherited multiple houses in Ames, Iowa, and wants to accurately estimate their sale prices. Having reliable estimates and understanding which features matter most can guide renovation decisions, pricing strategies, and investment planning.
+As a good friend, you are requested by your friend, **Lydia Doe**, who has received an inheritance from a deceased great-grandfather located in Ames, Iowa, to help in maximizing the sales price for the inherited properties.
 
-**Primary Business Requirements:**
+Although Lydia has an excellent understanding of property prices in her own state and residential area, she fears that basing her estimates for property worth on her current knowledge might lead to inaccurate appraisals. What makes a house desirable and valuable where she comes from might not be the same in Ames, Iowa. She found a public dataset with house prices for Ames, Iowa, and has provided you with that.
+
+**Business Requirements:**
 
 1. **Discover Correlations:**
-   - Understand how different property attributes correlate with sale price.
-   - Visualize these correlations to help Lydia grasp which features significantly drive value in Ames, potentially differing from her home state’s market.
+   - The client is interested in discovering how the house attributes correlate with the sale price.
+   - She expects data visualizations of the correlated variables against the sale price to illustrate these relationships.
 
 2. **Predict House Sale Prices:**
-   - Use the historical dataset to build regression models that accurately predict sale prices.
-   - Provide an interface to predict prices for Lydia’s inherited houses and any other properties by inputting relevant features.
-   - Enable Lydia to quickly adapt her selling strategy based on data-driven price insights.
+   - The client is interested in predicting the house sale price for her four inherited houses.
+   - She also wants the ability to predict the sale price for any other house in Ames, Iowa.
 
-**User Stories:**
+## Hypothesis and How to Validate
 
-- *As a homeowner (Lydia):* I want to know which factors influence my property’s value and get accurate price estimates to decide on renovations and pricing strategies.
-- *As a real estate agent:* I need quick, reliable price estimates and insights to advise clients and justify listing prices.
-- *As an investor:* I want to identify undervalued properties and potential returns on investment by understanding feature importance and predicted prices.
+### Hypothesis 1
 
----
+**Higher overall quality of the house (`OverallQual`) leads to a higher sale price.**
 
-## Hypotheses and Validation Plans
+**Validation Plan:**
 
-The project started with several hypotheses connecting property attributes to sale price:
+- Calculate the correlation coefficient between `OverallQual` and `SalePrice`.
+- Create scatter plots and box plots to visualize the relationship.
+- Analyze the strength and significance of the correlation.
 
-1. **Hypothesis 1:** Higher overall quality (`OverallQual`) leads to higher sale prices.
-   - *Validation:* Correlation analysis, scatter plots, and box plots to confirm a strong positive relationship.
+### Hypothesis 2
 
-2. **Hypothesis 2:** Larger living areas (`GrLivArea`) increase sale prices.
-   - *Validation:* Correlation coefficients and scatter plots of `GrLivArea` vs. `SalePrice`.
+**Larger living areas (`GrLivArea`) result in higher sale prices.**
 
-3. **Hypothesis 3:** Recently remodeled homes (`YearRemodAdd`) command higher prices.
-   - *Validation:* Line plots and temporal analysis to see if modern renovations align with price increases.
+**Validation Plan:**
 
-Validating these hypotheses helps identify key value drivers and gives Lydia confidence in the underlying logic of the model’s insights.
+- Compute the correlation between `GrLivArea` and `SalePrice`.
+- Plot `GrLivArea` against `SalePrice` using scatter plots.
+- Examine any outliers or anomalies that may affect the relationship.
 
----
+### Hypothesis 3
 
-## Mapping Business Requirements to Tasks
+**Houses that have been recently remodeled (`YearRemodAdd`) have higher sale prices.**
 
-### Alignment with CRISP-DM
+**Validation Plan:**
 
-This project follows the CRISP-DM methodology for a structured, professional approach:
+- Assess the correlation between `YearRemodAdd` and `SalePrice`.
+- Use line plots to visualize average sale prices over remodel years.
+- Determine if newer remodel years correspond to higher prices.
 
-1. **Business Understanding:** Clarify objectives and success metrics (accurate predictions, correlation insights).
-2. **Data Understanding:** Conduct EDA to comprehend distributions, outliers, and relationships.
-3. **Data Preparation:** Clean, encode, and transform data to ensure readiness for modeling.
-4. **Modeling:** Train multiple regression models (Linear, Ridge, Lasso, ElasticNet, Random Forest, Gradient Boosting).
-5. **Evaluation:** Use MAE, RMSE, and R² metrics to select the best model. Aim for R² ≥ 0.75.
-6. **Deployment:** Provide an interactive Streamlit dashboard for immediate user access and decision support.
+## The Rationale to Map the Business Requirements to the Data Visualizations and ML Tasks
 
-### Business Requirement 1: Discover Correlations
+### Business Requirement 1
 
 **Data Visualization Tasks:**
-- Correlation matrices, heatmaps, scatter plots, and box plots to reveal feature-price relationships.
-- Helps Lydia understand Ames-specific market drivers.
 
-### Business Requirement 2: Predict House Sale Prices
+- Perform exploratory data analysis (EDA) to identify key features that correlate with `SalePrice`.
+- Use correlation matrices and heatmaps to present the strength of relationships.
+- Generate scatter plots, box plots, and line plots to visually explore the correlations.
+- These visualizations will help Lydia understand which attributes most significantly affect house prices in Ames, Iowa.
+
+### Business Requirement 2
 
 **Machine Learning Tasks:**
-- Train and evaluate regression models.
-- Deploy the top model for real-time predictions.
-- Enable Lydia and other users to input custom property attributes and get instant predicted sale prices.
 
----
+- Develop regression models to predict `SalePrice` based on house attributes.
+- Use the historical dataset to train models such as Linear Regression, Random Forest, and XGBoost.
+- Evaluate models using performance metrics (e.g., MAE, RMSE, R² Score) to select the best-performing model.
+- Apply the model to predict sale prices for Lydia's four inherited houses.
+- Provide a user interface (dashboard) where Lydia can input attributes of any house in Ames, Iowa, and get a predicted sale price.
 
 ## ML Business Case
 
-**Problem Statement:**  
-Lydia needs accurate, data-driven price estimates for her inherited properties to maximize profits and avoid guesswork.
+### Problem Statement
 
-**Proposed Solution:**  
-Use a regression-based ML model trained on Ames historical data to predict sale prices from property attributes.
+Lydia needs an accurate and reliable method to estimate the sale prices of her inherited houses in Ames, Iowa, to maximize her profits and make informed decisions for future property investments.
 
-**Expected Benefits:**
-- **Accurate Pricing:** Avoid mispricing and financial losses.
-- **Informed Decision-Making:** Understand which renovations yield higher returns.
-- **Scalability:** Apply insights to any Ames property, guiding future investments.
+### Proposed Solution
 
-**Performance Goal:**  
-Achieve an **R² ≥ 0.75** to ensure the model is reliable and explains a significant portion of the price variance.
+Build a predictive regression model using historical house sale data from Ames, Iowa, to estimate the sale prices based on various house attributes.
 
----
+### Expected Benefits
+
+- **Accurate Pricing:** Helps Lydia avoid underpricing or overpricing her properties.
+- **Strategic Decision-Making:** Understanding key factors affecting house prices assists in making informed decisions.
+- **Future Investments:** The predictive model can be used for any house in Ames, Iowa, aiding future investment considerations.
+
+### Performance Goal
+
+Achieve an **R² score of at least 0.75** on both the training and test sets to ensure the model's reliability.
+
+### Model Inputs and Outputs
+
+- **Inputs:** House attributes such as `OverallQual`, `GrLivArea`, `YearBuilt`, `TotalBsmtSF`, etc.
+- **Output:** Predicted sale price of the house.
 
 ## Dashboard Design
 
-Built with Streamlit, the dashboard provides intuitive navigation and interactive elements:
+The dashboard will be built using **Streamlit** and will include the following pages:
 
-**Pages:**
+### Project Summary Page
 
-1. **Project Summary:**
-   - Overview of objectives, CRISP-DM alignment, and business context.
+**Content:**
 
-2. **Feature Correlations:**
-   - Visualizations (heatmaps, scatter plots) to identify which attributes strongly influence sale price.
+- Introduction to the project and its objectives.
+- Overview of the datasets used.
+- Summary of Lydia's business requirements.
 
-3. **House Price Predictions:**
-   - Predict sale prices for Lydia’s inherited houses.
-   - Input forms (sliders, number inputs, dropdowns) to estimate any Ames property’s value on the fly.
+**Widgets/Elements:**
 
-4. **Project Hypotheses:**
-   - Displays initial hypotheses and their validation.
-   - Confirms which features matter most and justifies the predictive model’s logic.
+- Text blocks with project description.
+- Images or icons representing key aspects.
 
-5. **Model Performance:**
-   - Showcases evaluation metrics, residual analysis, and feature importance.
-   - Builds trust in the model’s accuracy and highlights its limitations.
+### Feature Correlations Page
 
-**User Experience:**
-- Real-time updates.
-- Clear navigation.
-- Immediate actionable insights for stakeholders.
+**Content:**
 
----
+- Visualizations showing how house attributes correlate with sale price.
+- Insights from the data analysis.
+
+**Widgets/Elements:**
+
+- Heatmaps of correlation matrices.
+- Scatter plots of top correlated features.
+- Interactive elements to select features for visualization.
+
+### House Price Predictions Page
+
+**Content:**
+
+- Display of predicted sale prices for the four inherited houses.
+- Total predicted sale price for all inherited properties.
+- Real-time prediction tool for any house in Ames, Iowa.
+
+**Widgets/Elements:**
+
+- Tables showing predictions for inherited houses.
+- Input forms with sliders, number inputs, and dropdowns for user inputs.
+- Button to trigger prediction.
+- Display of predicted sale price based on user input.
+
+### Project Hypotheses Page
+
+**Content:**
+
+- Listing of project hypotheses.
+- Explanation of validation methods and results.
+- Visualizations supporting the hypotheses.
+
+**Widgets/Elements:**
+
+- Text blocks explaining hypotheses and findings.
+- Plots and charts demonstrating validation.
+
+### Model Performance Page
+
+**Content:**
+
+- Presentation of model evaluation metrics.
+- Comparison of different models tested.
+- Explanation of the machine learning pipeline.
+
+**Widgets/Elements:**
+
+- Tables showing performance metrics (MAE, RMSE, R² Score).
+- Graphs of actual vs. predicted prices.
+- Residual plots.
+- Text blocks outlining pipeline steps.
 
 ## Unfixed Bugs
 
-No known unfixed bugs. Thorough testing ensures stable performance and reliable functionality.
-
----
+At the time of deployment, there are **no known unfixed bugs**. All features and functionalities have been thoroughly tested and are working as expected.
 
 ## Deployment
 
-**Heroku Live Link:**  
-[House Price Prediction Dashboard](https://john-furlong-price-predictor-ee67ab0394fa.herokuapp.com/)
+### Heroku
 
-**Steps:**
-1. Set up GitHub repository with code, models, data, and requirements.
-2. Include `Procfile` and `runtime.txt` for Heroku.
-3. Deploy via Heroku CLI or web interface.
-4. Access the deployed app using the provided Heroku URL.
+*The app live link is: [House Price Prediction Dashboard](https://john-furlong-price-predictor-ee67ab0394fa.herokuapp.com/)*
 
----
+**Deployment Steps:**
 
-## Future Enhancements
+1. **Set Up Repository:**
 
-- **Additional Features:** Integrate external data (location-based amenities, economic indicators).
-- **Model Tuning:** Explore ensembles or neural networks for even better accuracy.
-- **Continuous Monitoring:** Retrain models as market conditions evolve.
-- **Feedback Loops:** Incorporate user feedback to refine usability and relevance.
+   - Ensure that all code, including `app.py`, models, data files, and `requirements.txt`, is pushed to a GitHub repository.
+   - Include a `Procfile` and `runtime.txt` for Heroku deployment.
 
----
+2. **Create a Heroku Account:**
 
-This README presents a comprehensive overview of the project’s aims, methodology, and value. By combining CRISP-DM principles, data-driven insights, and robust ML models, the House Price Prediction Dashboard exemplifies a professional, real-world application of Data Science to support informed decision-making in the housing market.
+   - Go to [Heroku](https://www.heroku.com/) and sign up for an account.
+
+3. **Install Heroku CLI (if deploying via command line):**
+
+   - Download and install the Heroku CLI from the [official website](https://devcenter.heroku.com/articles/heroku-cli).
+
+4. **Log In to Heroku via CLI:**
+
+   ```bash
+   heroku login
