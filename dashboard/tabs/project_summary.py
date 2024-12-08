@@ -38,8 +38,10 @@ def show_page(data, data_original, models, scaler, selected_features, skewed_fea
     - Delve into the **Project Hypotheses** tab to understand the reasoning behind feature selection and their impact on prices.
     - Check the **Model Performance** tab for detailed insights into the model's accuracy and reliability.
 
+    
     ### Acknowledgments
-    This project was developed by John Furlong with support from the Code Institute. I acknowledge the Code Institute for providing comprehensive course material, support staff, lectures, and resources that were instrumental in the completion of this project.  The project is based on the Ames Housing Dataset, a comprehensive compilation of property sale records.
-
+    This project was created by John Furlong with the support of the Code Institute. Their straightforward course materials, responsive support team, and engaging lessons gave me the tools and confidence to complete this project. Their teaching style made it easy to understand and apply the key concepts. The project is based on the Ames Housing Dataset, a detailed record of property sales provided by the Code Institute.
+    I’d also like to thank ChatGPT by OpenAI, which was a valuable resource throughout the project. It helped me understand concepts more deeply, troubleshoot problems, brainstorm ideas and help with code. It was a great tool for refining my approach and improving the final outcome.
+    This project was a rewarding experience, blending the structured learning from the Code Institute with the problem-solving support of AI tools. I’m grateful for all the help and resources that made it possible.
     ---
     """)
