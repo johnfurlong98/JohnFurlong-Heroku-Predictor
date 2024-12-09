@@ -56,8 +56,8 @@ def load_data():
     data_dir.mkdir(exist_ok=True)
 
     # Expected file paths
-    house_records_path = data_dir / 'house_prices_records.csv'
-    inherited_houses_path = data_dir / 'inherited_houses.csv'
+    house_records_path = data_dir / 'house-price-20211124T154130Z-001' / 'house_prices_records.csv'
+    inherited_houses_path = data_dir / 'house-price-20211124T154130Z-001' / 'inherited_houses.csv'
 
     # If not found, download from Kaggle
     if not house_records_path.exists() or not inherited_houses_path.exists():
