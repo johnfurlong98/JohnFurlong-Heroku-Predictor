@@ -41,8 +41,8 @@ def load_data():
     # Load environment variables from .env
     load_dotenv()
 
-    kaggle_username = os.environ.get('KAGGLE_USERNAME')
-    kaggle_key = os.environ.get('KAGGLE_KEY')
+    kaggle_username = os.environ.get('johnfurlong99')
+    kaggle_key = os.environ.get('e3a7f64d7157beeb74ef07557e62fca8')
 
     if not kaggle_username or not kaggle_key:
         st.error("**Error:** Kaggle credentials not found in environment variables. Please set KAGGLE_USERNAME and KAGGLE_KEY.")
