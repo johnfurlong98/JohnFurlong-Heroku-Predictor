@@ -56,7 +56,7 @@ def load_data():
     data_dir.mkdir(exist_ok=True)
 
     # Expected folder path
-    dataset_folder_path = data_dir / 'house-price-20211124T154130Z-001' / 'house_price'
+    dataset_folder_path = data_dir / 'house-price-20211124T154130Z-001' / 'house-price'
 
     # If the folder doesn't contain expected files, download from Kaggle
     if not dataset_folder_path.exists() or not any(dataset_folder_path.glob('*.csv')):
