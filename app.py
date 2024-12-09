@@ -67,8 +67,6 @@ def load_data():
             st.error("**Error:** Failed to download the dataset from Kaggle. Check credentials or dataset availability.")
             st.stop()
 
-        # Debug: print files in data_dir to confirm the correct files are present
-        st.write("Files in data directory after download:", os.listdir(data_dir))
 
     # Locate CSV files dynamically
     csv_files = list(dataset_folder_path.glob('*.csv'))
@@ -76,8 +74,6 @@ def load_data():
         st.error(f"**Error:** No CSV files found in `{dataset_folder_path}`.")
         st.stop()
 
-    # Debug: List CSV files found
-    st.write("CSV files found:", [str(file) for file in csv_files])
 
     # Load specific CSVs if known
     house_records_path = next((f for f in csv_files if 'house_prices_records' in f.name), None)
