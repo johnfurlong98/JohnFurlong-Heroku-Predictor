@@ -48,6 +48,10 @@ def load_data():
         st.error("**Error:** Kaggle credentials not found in environment variables. Please set KAGGLE_USERNAME and KAGGLE_KEY.")
         st.stop()
 
+    # Set Kaggle environment variables for CLI
+    os.environ['KAGGLE_USERNAME'] = kaggle_username
+    os.environ['KAGGLE_KEY'] = kaggle_key
+
     data_dir = BASE_DIR / 'data'
     data_dir.mkdir(exist_ok=True)
 
@@ -56,9 +60,6 @@ def load_data():
     inherited_houses_path = data_dir / 'inherited_houses.csv'
 
     if not house_records_path.exists() or not inherited_houses_path.exists():
-        # Install kaggle if not present, remove this if already installed
-        # !pip install kaggle
-        
         # Run the kaggle CLI command to download and unzip the dataset
         os.system(f'kaggle datasets download -d codeinstitute/housing-prices-data -p "{data_dir}" --unzip')
 
