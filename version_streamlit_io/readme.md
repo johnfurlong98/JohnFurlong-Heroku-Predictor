@@ -206,31 +206,33 @@ At the time of deployment, there are **no known unfixed bugs**. All features and
 
 ## Deployment
 
-### Heroku
+1. Set Up Repository:
+   - Create a GitHub repository containing:
+     - app.py: Your main Streamlit application script.
+     - requirements.txt: List all Python dependencies
+     - Include all contents of the folder version_streamlit_io
 
-**Note:** For testing and deployment on Streamlit, any Heroku-related configuration files (like `Procfile`, `runtime.txt`, or `requirements.txt` specific to Heroku) should be removed or ignored. Streamlit uses a different deployment model and does not require these files.
+2. Create a Streamlit Cloud Account:
+   - Sign up or log in at https://streamlit.io/cloud.
 
-*The app live link (if using Heroku) would be, for example: [House Price Prediction Dashboard](https://your-app-name.herokuapp.com/)*
+3. Deploy the App:
+   - In Streamlit Cloud Dashboard, click "New app."
+   - Connect your GitHub account if prompted.
+   - Select the repository and branch with your app files.
+   - Specify app.py as the main file.
 
-**Deployment Steps (Heroku):**
+4. Configure Environment Variables (Optional):
+   - Add API keys or sensitive credentials in the Secrets Management section.
 
-1. **Set Up Repository:**
+5. Launch and Share:
+   - Click "Deploy."
+   - Access your app via the unique URL provided, e.g., https://your-app-name.streamlit.app.
 
-   - Ensure that all code, including `app.py`, models, data files, and `requirements.txt`, is pushed to a GitHub repository.
-   - Include a `Procfile` and `runtime.txt` for Heroku deployment only if you are deploying to Heroku. Remove these files before pushing to Streamlit.
+6. Update Your App:
+   - Push updates to your GitHub repo. Streamlit Cloud will auto-redeploy.
 
-2. **Create a Heroku Account:**
-
-   - Go to [Heroku](https://www.heroku.com/) and sign up for an account.
-
-3. **Install Heroku CLI (if deploying via command line):**
-
-   - Download and install the Heroku CLI from the [official website](https://devcenter.heroku.com/articles/heroku-cli).
-
-4. **Log In to Heroku via CLI:**
-
-   ```bash
-   heroku login
+7. Monitor and Manage:
+   - Use the Streamlit Cloud Dashboard to monitor usage, logs, and settings.
 
 ### Acknowledgments & Resources
 This project was developed by John Furlong with support from the Code Institute. Their comprehensive curriculum, supportive resources, and practical assignments provided the foundational knowledge required to build this solution. The Ames Housing Dataset served as an excellent real-world data source, supplying rich feature information.
