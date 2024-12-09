@@ -12,17 +12,19 @@ import pickle
 from pathlib import Path
 import plotly.express as px
 
-from dashboard.tabs.project_summary import show_page as show_project_summary
-from dashboard.tabs.feature_correlations import show_page as show_feature_correlations
-from dashboard.tabs.house_price_predictions import show_page as show_house_price_predictions
-from dashboard.tabs.project_hypotheses import show_page as show_project_hypotheses
-from dashboard.tabs.model_performance import show_page as show_model_performance
+from dashboard.apps_pages.project_summary import show_page as show_project_summary
+from dashboard.apps_pages.feature_correlations import show_page as show_feature_correlations
+from dashboard.apps_pages.house_price_predictions import show_page as show_house_price_predictions
+from dashboard.apps_pages.project_hypotheses import show_page as show_project_hypotheses
+from dashboard.apps_pages.model_performance import show_page as show_model_performance
 
 # --------------------------- #
 #       Configuration          #
 # --------------------------- #
 
 BASE_DIR = Path(__file__).resolve().parent
+
+
 
 st.set_page_config(
     page_title="House Price Prediction Dashboard",
