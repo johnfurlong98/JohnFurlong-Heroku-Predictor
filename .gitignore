@@ -43,7 +43,6 @@ coverage.xml
 
 # Distribution / Package files
 .Python
-*.env
 
 # Pyenv
 .python-version
