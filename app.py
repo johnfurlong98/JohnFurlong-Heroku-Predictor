@@ -11,6 +11,7 @@ from scipy.special import inv_boxcox
 import pickle
 from pathlib import Path
 import plotly.express as px
+from dotenv import load_dotenv
 
 from dashboard.apps_pages.project_summary import show_page as show_project_summary
 from dashboard.apps_pages.feature_correlations import show_page as show_feature_correlations
@@ -23,8 +24,6 @@ from dashboard.apps_pages.model_performance import show_page as show_model_perfo
 # --------------------------- #
 
 BASE_DIR = Path(__file__).resolve().parent
-
-
 
 st.set_page_config(
     page_title="House Price Prediction Dashboard",
@@ -39,14 +38,35 @@ def check_file_exists(file_path, description):
 
 @st.cache_data(show_spinner=False)
 def load_data():
-    data_path = BASE_DIR / 'dashboard' / 'notebook' / 'raw_data' / 'house_prices_records.csv'
-    inherited_houses_path = BASE_DIR / 'dashboard' / 'notebook' / 'raw_data' / 'inherited_houses.csv'
+    # Load environment variables from .env
+    load_dotenv()
 
-    check_file_exists(data_path, "house_prices_records.csv")
+    kaggle_username = os.environ.get('KAGGLE_USERNAME')
+    kaggle_key = os.environ.get('KAGGLE_KEY')
+
+    if not kaggle_username or not kaggle_key:
+        st.error("**Error:** Kaggle credentials not found in environment variables. Please set KAGGLE_USERNAME and KAGGLE_KEY.")
+        st.stop()
+
+    data_dir = BASE_DIR / 'data'
+    data_dir.mkdir(exist_ok=True)
+
+    # Download dataset from Kaggle API if not already downloaded
+    house_records_path = data_dir / 'house_prices_records.csv'
+    inherited_houses_path = data_dir / 'inherited_houses.csv'
+
+    if not house_records_path.exists() or not inherited_houses_path.exists():
+        # Install kaggle if not present, remove this if already installed
+        # !pip install kaggle
+        
+        # Run the kaggle CLI command to download and unzip the dataset
+        os.system(f'kaggle datasets download -d codeinstitute/housing-prices-data -p "{data_dir}" --unzip')
+
+    check_file_exists(house_records_path, "house_prices_records.csv")
     check_file_exists(inherited_houses_path, "inherited_houses.csv")
 
     try:
-        data = pd.read_csv(data_path)
+        data = pd.read_csv(house_records_path)
     except Exception as e:
         st.error(f"**Error loading house_prices_records.csv:** {e}")
         st.stop()
