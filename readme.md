@@ -179,6 +179,9 @@ Built with Streamlit, the dashboard provides intuitive navigation and interactiv
 
 No known unfixed bugs. Thorough testing ensures stable performance and reliable functionality.
 
+**Fixed Compatability issue:**
+Heroku Stack 24 was unable to download the XGBoost package that I wanted to use due to size cnsraints, as a workaround I have provided a streamlit.io version which can be used to view the XGBoost results which were the best performing of all, however this version of the app is not as complete as the heroku deployment, The functionalities that required this package were removed from the final app due to the compatibility issue and now it is working with no observed bugs.
+
 ---
 
 ## Deployment
