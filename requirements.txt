@@ -9,4 +9,4 @@ scikit-learn==1.5.2
 packaging==24.2
 plotly==5.15.0
 kaggle==1.6.17
-python-dotenv==1.0.0
+python-dotenv
