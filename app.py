@@ -48,21 +48,30 @@ def load_data():
         st.error("**Error:** Kaggle credentials not found in environment variables. Please set KAGGLE_USERNAME and KAGGLE_KEY.")
         st.stop()
 
-    # Set Kaggle environment variables for CLI
+    # Set Kaggle credentials for CLI usage
     os.environ['KAGGLE_USERNAME'] = kaggle_username
     os.environ['KAGGLE_KEY'] = kaggle_key
 
     data_dir = BASE_DIR / 'data'
     data_dir.mkdir(exist_ok=True)
 
-    # Download dataset from Kaggle API if not already downloaded
+    # Expected file paths
     house_records_path = data_dir / 'house_prices_records.csv'
     inherited_houses_path = data_dir / 'inherited_houses.csv'
 
+    # If not found, download from Kaggle
     if not house_records_path.exists() or not inherited_houses_path.exists():
-        # Run the kaggle CLI command to download and unzip the dataset
-        os.system(f'kaggle datasets download -d codeinstitute/housing-prices-data -p "{data_dir}" --unzip')
+        # Download and unzip the dataset
+        cmd = f'kaggle datasets download -d codeinstitute/housing-prices-data -p "{data_dir}" --unzip'
+        ret = os.system(cmd)
+        if ret != 0:
+            st.error("**Error:** Failed to download the dataset from Kaggle. Check credentials or dataset availability.")
+            st.stop()
 
+        # Debug: print files in data_dir to confirm the correct files are present
+        st.write("Files in data directory after download:", os.listdir(data_dir))
+
+    # Check if the files now exist
     check_file_exists(house_records_path, "house_prices_records.csv")
     check_file_exists(inherited_houses_path, "inherited_houses.csv")
 
@@ -79,6 +88,7 @@ def load_data():
         st.stop()
 
     return data, inherited_houses
+
 
 @st.cache_resource(show_spinner=False)
 def load_models():
