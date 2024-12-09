@@ -55,12 +55,11 @@ def load_data():
     data_dir = BASE_DIR / 'data'
     data_dir.mkdir(exist_ok=True)
 
-    # Expected file paths
-    house_records_path = data_dir / 'house-price-20211124T154130Z-001' / 'house_prices_records.csv'
-    inherited_houses_path = data_dir / 'house-price-20211124T154130Z-001' / 'inherited_houses.csv'
+    # Expected folder path
+    dataset_folder_path = data_dir / 'house-price-20211124T154130Z-001'
 
-    # If not found, download from Kaggle
-    if not house_records_path.exists() or not inherited_houses_path.exists():
+    # If the folder doesn't contain expected files, download from Kaggle
+    if not dataset_folder_path.exists() or not any(dataset_folder_path.glob('*.csv')):
         # Download and unzip the dataset
         cmd = f'kaggle datasets download -d codeinstitute/housing-prices-data -p "{data_dir}" --unzip'
         ret = os.system(cmd)
@@ -71,9 +70,26 @@ def load_data():
         # Debug: print files in data_dir to confirm the correct files are present
         st.write("Files in data directory after download:", os.listdir(data_dir))
 
-    # Check if the files now exist
-    check_file_exists(house_records_path, "house_prices_records.csv")
-    check_file_exists(inherited_houses_path, "inherited_houses.csv")
+    # Locate CSV files dynamically
+    csv_files = list(dataset_folder_path.glob('*.csv'))
+    if not csv_files:
+        st.error(f"**Error:** No CSV files found in `{dataset_folder_path}`.")
+        st.stop()
+
+    # Debug: List CSV files found
+    st.write("CSV files found:", [str(file) for file in csv_files])
+
+    # Load specific CSVs if known
+    house_records_path = next((f for f in csv_files if 'house_prices_records' in f.name), None)
+    inherited_houses_path = next((f for f in csv_files if 'inherited_houses' in f.name), None)
+
+    if not house_records_path:
+        st.error("**Error:** The file `house_prices_records.csv` was not found.")
+        st.stop()
+
+    if not inherited_houses_path:
+        st.error("**Error:** The file `inherited_houses.csv` was not found.")
+        st.stop()
 
     try:
         data = pd.read_csv(house_records_path)
